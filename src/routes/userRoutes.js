@@ -4,7 +4,7 @@ const userController = require('../controllers/userController');
 const auth = require("../middleware/auth");
 const userValidator = require('../utils/validators/user');
 
-router.put('/profile/:id', auth, [userValidator.validateUpdateProfile, userValidator.result], userController.updateProfile);
+router.patch('/profile/:id', auth, [userValidator.validateUpdateProfile, userValidator.result], userController.updateProfile);
 router.post('/activity', userController.addUserActivity);
 router.patch('/enable-mfa/:id', auth, userController.enableMFA);
 router.post('/verify-mfa/:id', userController.verifyMFA);

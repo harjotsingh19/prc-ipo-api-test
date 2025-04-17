@@ -51,7 +51,7 @@ const verifyMFA = {
 };
 
 const updateProfile = {
-    put: {
+    patch: {
         tags: ["User"],
         security: [{ bearerAuth: [] }],
         summary: "Update user profile",
@@ -70,21 +70,18 @@ const updateProfile = {
             name: 'userData',
             schema: {
                 type: 'object',
-                required: ['name'],
+                // required: ['name'],
                 properties: {
-                    name: {
+                    firstName: {
+                        type: 'string',
+                    },
+                    lastName: {
                         type: 'string',
                     },
                     email: {
                         type: 'string',
                     },
                     password: {
-                        type: 'string',
-                    },
-                    phone: {
-                        type: 'string',
-                    },
-                    countryCode: {
                         type: 'string',
                     },
                 },

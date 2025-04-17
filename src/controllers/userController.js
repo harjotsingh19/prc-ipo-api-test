@@ -3,11 +3,10 @@ const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const User = require("../models/User");
 const { httpResponse } = require("../middleware/responseHandler");
-const { statusCode, message } = require("../config/constants");
+const { status,statusCode, message } = require("../config/constants");
 const UserActivity = require("../models/UserActivity");
 const { isCurrentUser } = require("../utils/helper");
-const PrivateAddress = require('../models/PrivateAddress');;
-
+const PrivateAddress = require('../models/PrivateAddress');
 
 // update login user profile
 const updateProfile = async (req, res) => {
@@ -22,10 +21,15 @@ const updateProfile = async (req, res) => {
                 {},
             );
         }
-        const { name, email, phone, countryCode, password } = req.body;
+        const { firstName,lastName, password } = req.body;
+        const email = req.body?.email?.toLowerCase();
+
+        console.log("🚀 ~ updateProfile ~ email:", email)
         const user = await User.findById(req.params.id);
+        console.log("🚀 ~ updateProfile ~ req.body:", req.body)
         const userData = {
-            name: name || user.name,
+            firstName: firstName.toLowerCase() || user.firstName,
+            lastName: lastName.toLowerCase() || user.lastName,
         };
         if (email) {
             const isEmailExist = await User.findOne({ email, _id: { $ne: req.params.id } });
@@ -40,22 +44,11 @@ const updateProfile = async (req, res) => {
             }
             userData.email = email;
             userData.isEmailVerified = (email == user.email ? user.isEmailVerified : false);
-        }
-        if (phone) {
-            const isPhoneExist = await User.findOne({ phone, _id: { $ne: req.params.id } });
-            if (isPhoneExist) {
-                return httpResponse(
-                    res,
-                    statusCode.badRequest,
-                    false,
-                    message.phoneAlreadyExist,
-                    {},
-                );
+            if (email != user.email) {
+                userData.status = status.EMAIL_VERIFICATION_PENDING;
             }
-            userData.phone = phone;
-            userData.countryCode = countryCode;
-            userData.isPhoneVerified = (phone == user.phone ? user.isPhoneVerified : false);
         }
+        
         if (password) {
             const salt = await bcrypt.genSalt(10);
             userData.password = await bcrypt.hash(password, salt);
@@ -63,6 +56,7 @@ const updateProfile = async (req, res) => {
         const updatedUser = await User.findByIdAndUpdate(req.params.id, userData, { new: true });
         const updatedUserData = { ...updatedUser._doc };
         delete updatedUserData.password;
+        console.log("🚀 ~ updateProfile ~ updatedUserData:", updatedUserData)
         return httpResponse(
             res,
             statusCode.ok,
@@ -188,16 +182,11 @@ const verifyMFA = async (req, res) => {
 const getUserProfile = async (req, res) => {
     try {
         const user = await User.findById(req.data.id);
+        console.log("🚀 ~ getUserProfile ~ user:", user)
         if (user) {
             const userData = { ...user._doc };
             delete userData.password;
-            const isUserWhitelisted = await PrivateAddress.findOne({ walletAddress: { $regex: `^${userData.walletAddress}$`, $options: "i" } });
-            const isUserBlacklisted = await BlacklistAddress.findOne({ walletAddress: { $regex: `^${userData.walletAddress}$`, $options: "i" } });
-
-            userData.isWalletAddressWhitelisted = !!isUserWhitelisted;
-            userData.isWalletAddressBlacklisted = !!isUserBlacklisted;
-
-            userData.kycHistory = await Kyc.find({ userId: userData._id });
+            console.log("🚀 ~ getUserProfile ~ userData:", userData)
             return httpResponse(
                 res,
                 statusCode.ok,
@@ -259,7 +248,7 @@ const changePassword = async (req, res) => {
                 res,
                 statusCode.badRequest,
                 false,
-                message.wrongPassword,
+                message.wrongPasswd,
             );
         }
 
@@ -269,7 +258,7 @@ const changePassword = async (req, res) => {
                 res,
                 statusCode.badRequest,
                 false,
-                message.invalidCredentials,
+                message.passwordNotMatch,
             );
         }
 
@@ -281,7 +270,7 @@ const changePassword = async (req, res) => {
             res,
             statusCode.ok,
             true,
-            message.credsChangeSuccess,
+            message.passwordUpdated,
             {}
         );
     } catch (error) {

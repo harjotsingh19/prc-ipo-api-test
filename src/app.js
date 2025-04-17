@@ -11,7 +11,7 @@ const { swaggerDefinition } = require('./utils/swagger.js')
 require('./db/mongoose');
 require('./utils/socketManager');
 const swaggerSpec = swaggerJsDoc(swaggerDefinition);
-// const { transactionCron, createSaleCron, saleFinalizeCron, icoFinalizedCron, userStatusUpdateCron, claimTokenCron } = require('./utils/cron');
+const { transactionCron, createSaleCron, saleFinalizeCron, icoFinalizedCron, userStatusUpdateCron, claimTokenCron } = require('./utils/cron');
 const { setUpSendGrid } = require("../src/utils/mailManager");
 
 const app = express();

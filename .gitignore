@@ -52,5 +52,14 @@ Thumbs.db
 package-lock.json
 .env
 
+.env copy
 
-ico-api-bitbucket.zip
+Jenkinsfile
+
+dev.env
+
+payloads-response.txt
+
+qa.env
+
+sonar-project.properties

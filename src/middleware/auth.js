@@ -6,6 +6,7 @@ const { httpResponse } = require("../middleware/responseHandler");
 module.exports = (req, res, next) => {
     try {
         let token = req.headers.authorization;
+        console.log("🚀 ~ token:", token)
         if (token == '') {
             return httpResponse(
                 res,

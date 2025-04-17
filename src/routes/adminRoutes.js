@@ -1,18 +1,29 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/authController.js');
-const upload = require("../utils/multer")
-const docUpload = upload.fields([{ name: 'idProofFront', maxCount: 1 }, { name: 'idProofBack', maxCount: 1 }, { name: 'selfie', maxCount: 1 }]);
+const adminController = require('../controllers/adminController');
+const auth = require("../middleware/auth")
+const adminValidator = require('../utils/validators/admin');
 
-router.post("/register", authController.registerInvestor);
-router.post("/verifyOtp", authController.verifyOTP);
-router.post("/login", authController.login);
-router.post("/resendOtp", authController.resendOtp);
-router.post("/forgotPassword", authController.forgotPassword);
-router.put("/resetPassword/:token", authController.resetPassword);
-router.post("/addWalletAddress", docUpload, authController.addWalletAddress);
-router.post("/refresh-token", authController.refreshToken);
+router.get("/investors", auth, [adminValidator.validateInvestorsList, adminValidator.result], adminController.getInvestors);
+router.get("/investments", auth, adminController.getAllInvestments);
+router.post("/sale/create", auth, adminController.createSale)
+router.get("/sales", auth, [adminValidator.validateSaleList, adminValidator.result], adminController.getSales);
+router.get("/investorKyc", auth, [adminValidator.validateInvestorKYCList, adminValidator.result], adminController.getInvestorKyc)
+router.post("/setAdminAddress", auth, adminController.setAdminAddress)
+router.get("/token", adminController.getTokenDetails);
+router.post("/token", adminController.createToken);
+router.get("/address-whitelist", auth, [adminValidator.validateWhitelistAddressList, adminValidator.result], adminController.getAllAddressWhitelist);
+router.get("/investors-investments/:walletAddress", auth, [adminValidator.validateInvestorsInvestmentsList, adminValidator.result], adminController.getOneInvestorAllInvestments);
+
+router.get('/sale-statistics', auth, [adminValidator.validateStatisticsList, adminValidator.result], adminController.getSaleStatistics);
+router.get('/user-analytics/:userId', auth, adminController.getUserAnalytics);
+router.get('/dashboard', auth, adminController.dashboard);
+router.get('/distribution-analytics/:saleId', auth, adminController.getDistributionAnalytics);
+router.patch('/investorKyc/:id', auth, adminController.updateInvestorKycStatus);
+router.get("/address-blacklist", auth, [adminValidator.validateWhitelistAddressList, adminValidator.result], adminController.getAllAddressBlacklist);
+router.patch("/investor/onchain-id/:userId", auth, [adminValidator.validateInvestorOnchainId, adminValidator.result], adminController.updateInvestorOnchainId);
+router.get("/claim-token-history", auth, [adminValidator.validateClaimTokenHistoryList, adminValidator.result], adminController.getClaimTokenHistory);
+router.get("/download-investments", adminController.downloadInvestments);
 
 module.exports = router;
-
 

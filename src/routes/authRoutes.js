@@ -14,9 +14,9 @@ router.post("/verifyOtp",validator.validateOtp(),validator.result, authControlle
 router.post("/login", validator.validateUserLogin(), validator.result,authController.login);
 router.post("/resendOtp",validator.validateResendOtp(), validator.result, authController.resendOtp);
 router.post("/forgotPassword",validator.validateForgotPassword(),validator.result, authController.forgotPassword);
-router.put("/resetPassword/:token", authController.resetPassword);
+router.put("/resetPassword/:token",validator.validateResetPassword(),validator.result, authController.resetPassword);
 // router.post("/addWalletAddress", docUpload, authController.addWalletAddress);
-router.post("/refresh-token", authController.refreshToken);
+router.post("/refresh-token",validator.validateRefreshToken(),validator.result, authController.refreshToken);
 
 module.exports = router;
 
