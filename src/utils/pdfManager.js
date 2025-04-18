@@ -1,18 +1,16 @@
 const { jsPDF } = require("jspdf");
 require("jspdf-autotable");
 
-const generatePDF = ({
-  headers,
-  rows,
-  title,
-}) => {
+const generatePDF = ({ headers, rows, title }) => {
   const doc = new jsPDF();
 
   if (title) {
     doc.text(title, 10, 10);
   }
 
-  const tableData = rows.map((row) => headers.map((header) => row[header] ?? ""));
+  const tableData = rows.map((row) =>
+    headers.map((header) => row[header] ?? "")
+  );
 
   doc.autoTable({
     head: [headers],
@@ -30,5 +28,5 @@ const generatePDF = ({
 };
 
 module.exports = {
-    generatePDF
+  generatePDF,
 };

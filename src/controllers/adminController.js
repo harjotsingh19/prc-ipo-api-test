@@ -379,14 +379,13 @@ const createSale = async (req, res) => {
 
     const normalizedName = name.trim().toLowerCase();
 
-
     const existingSale = await Sale.findOne({ name: normalizedName });
     if (existingSale) {
       return httpResponse(
         res,
         statusCode.badRequest,
         false,
-        message.SaleNameAlreadyExists,
+        message.SaleNameAlreadyExists
       );
     }
 
@@ -512,7 +511,7 @@ const getSales = async (req, res) => {
 
     const skip = (page - 1) * pageSize;
     const sort = { createdAt: -1 };
-    
+
     const {
       search: filterString,
       status: filterStatus,

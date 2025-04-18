@@ -93,29 +93,31 @@ const getInvestments = async (req, res) => {
 
     // 4. Optional total count for frontend
     const totalUser = await User.countDocuments(condition);
-    console.log("🚀 ~ getInvestments ~ totalCount:", totalUser)
+    console.log("🚀 ~ getInvestments ~ totalCount:", totalUser);
 
     // Assuming 'Transaction' is the model for your transactions collection
     // const totalTransactions = await Transaction.countDocuments(condition);
     // console.log("🚀 ~ getTransactions ~ totalTransactions:", totalTransactions);
 
-
-    return httpResponse(res, statusCode.ok, true, message.allInvestmentsReturned, {
-      data: investments,
-      // pagination: {
-      //   total: totalTransactions,
-      //   page,
-      //   pageSize,
-      //   totalPages: Math.ceil(totalTransactions / pageSize),
-      // },
-    });
+    return httpResponse(
+      res,
+      statusCode.ok,
+      true,
+      message.allInvestmentsReturned,
+      {
+        data: investments,
+        // pagination: {
+        //   total: totalTransactions,
+        //   page,
+        //   pageSize,
+        //   totalPages: Math.ceil(totalTransactions / pageSize),
+        // },
+      }
+    );
   } catch (error) {
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
-
-
-
 
 // const getInvestments = async (req, res) => {
 //   try {
@@ -284,7 +286,6 @@ const getInvestments2 = async (req, res) => {
           as: "transactions",
         },
       },
-
 
       /**
        *    {

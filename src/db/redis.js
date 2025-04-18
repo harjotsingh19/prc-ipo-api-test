@@ -13,9 +13,9 @@
 //       await redisClient.set(key, defaultValue);
 //     }
 // }
-  
+
 // const defaultBlockValue = 0;
-  
+
 // initializeBlock('transaction_last_block', defaultBlockValue);
 // initializeBlock('sale_last_block', defaultBlockValue);
 // initializeBlock('icofinalized_last_block', defaultBlockValue);

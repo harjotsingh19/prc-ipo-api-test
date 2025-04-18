@@ -1,0 +1,37 @@
+{
+  "[json]": {
+    "editor.quickSuggestions": {
+      "strings": true
+    },
+    "editor.suggest.insertMode": "replace"
+  },
+  "editor.fontLigatures": true,
+  "editor.find.cursorMoveOnType": false,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "gitlens.defaultDateFormat": null,
+  "gitlens.defaultDateShortFormat": null,
+  "gitlens.defaultTimeFormat": null,
+  "editor.suggestSelection": "first",
+  "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
+  "editor.formatOnSave": true,
+  "workbench.colorCustomizations": {},
+  "typescript.format.semicolons": "insert",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "diffEditor.ignoreTrimWhitespace": false,
+  "editor.tabSize": 2,
+  "javascript.suggest.autoImports": true,
+  "git.autofetch": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+  "cSpell.words": ["abc"]
+  // "sonarlint.connectedMode.project": {
+  //   "connectionId": "https://sonar.debutinfotech.in/",
+  //   "projectKey": "lacrosse-backend_lacrosse-services"
+  // }
+}

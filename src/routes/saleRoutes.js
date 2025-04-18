@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const adminController = require("../controllers/adminController");
 const auth = require("../middleware/auth");
-const { isAmin} = require("../utils/helper");  
+const { isAmin } = require("../utils/helper");
 const adminValidator = require("../utils/validators/admin");
 
 router.get(

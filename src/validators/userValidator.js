@@ -113,7 +113,7 @@ class Validator {
         .not()
         .isEmpty()
         .bail()
-        .withMessage("Confirm password is required")
+        .withMessage("Confirm password is required"),
     ];
   }
 

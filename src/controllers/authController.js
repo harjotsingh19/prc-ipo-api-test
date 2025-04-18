@@ -77,12 +77,12 @@ const registerInvestor = async (req, res) => {
 const verifyOTP = async (req, res) => {
   try {
     const { otp, userId, operation } = req.body;
-    console.log("🚀 ~ verifyOTP ~ req.body:", req.body)
+    console.log("🚀 ~ verifyOTP ~ req.body:", req.body);
 
     const otpData = await Otp.findOne({ userId: userId, operation }).populate(
       "userId"
     );
-    console.log("🚀 ~ verifyOTP ~ otpData:", otpData)
+    console.log("🚀 ~ verifyOTP ~ otpData:", otpData);
     if (!otpData) {
       return httpResponse(res, statusCode.errorPage, false, message.otpExpired);
     }
@@ -128,7 +128,7 @@ const verifyOTP = async (req, res) => {
         $set: updateUserData,
       },
       {
-        new: true, 
+        new: true,
       }
     );
 
@@ -137,13 +137,9 @@ const verifyOTP = async (req, res) => {
       config.accessTokenSecret,
       config.accessTokenExpiry
     );
-    return httpResponse(
-      res,
-      statusCode.ok,
-      true,
-      message.otpVerified,
-      {accessToken:accessToken}
-    );
+    return httpResponse(res, statusCode.ok, true, message.otpVerified, {
+      accessToken: accessToken,
+    });
   } catch (error) {
     console.log("error here ===>", error);
     return httpResponse(res, statusCode.errorPage, false, error.message);
@@ -217,12 +213,11 @@ const login = async (req, res) => {
       refreshToken: refreshToken,
     };
     const storeRefreshToken = await RefreshTokens.findOneAndUpdate(
-      { userId: userData._id },             
-      { refreshToken: refreshToken },          
-      { upsert: true, new: true }  
-  
+      { userId: userData._id },
+      { refreshToken: refreshToken },
+      { upsert: true, new: true }
     );
-    console.log("🚀 ~ login ~ storeRefreshToken:", storeRefreshToken)
+    console.log("🚀 ~ login ~ storeRefreshToken:", storeRefreshToken);
 
     return httpResponse(
       res,
@@ -362,12 +357,7 @@ const resetPassword = async (req, res) => {
 
     await user.save();
 
-    return httpResponse(
-      res,
-      statusCode.ok,
-      true,
-      message.passwordUpdated
-    );
+    return httpResponse(res, statusCode.ok, true, message.passwordUpdated);
   } catch (error) {
     return httpResponse(res, statusCode.badRequest, false, error.message);
   }
@@ -446,7 +436,7 @@ const refreshToken = async (req, res) => {
   try {
     const { refreshToken } = req.body;
     const decoded = jwt.verify(refreshToken, config.refreshTokenSecret);
-    console.log("🚀 ~ refreshToken ~ decoded:", decoded)
+    console.log("🚀 ~ refreshToken ~ decoded:", decoded);
     const userData = await User.findById(decoded.id);
     if (!userData) {
       return httpResponse(
@@ -479,7 +469,6 @@ const refreshToken = async (req, res) => {
       responseData
     );
   } catch (error) {
-
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };

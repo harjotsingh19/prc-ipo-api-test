@@ -48,7 +48,7 @@ const message = {
   <h4><p style="font-size:0.9em;">Best Regards,<br />RVA</p></h4>
   <hr style="border:none;border-top:1px solid #eee" />
   </div>`,
-  uploadRequiredDocs: 'Please upload required docs',
+  uploadRequiredDocs: "Please upload required docs",
   kycInProgress: "Your kyc is in progress",
 
   // Investor / Admin
@@ -57,7 +57,8 @@ const message = {
   adminAlreadyExists: "Admin already exists",
   userAlreadyExists: "User already exists",
   userDoesnotExists: "User doesn't exists",
-  userNotActive: "User is not active, please contact admin for further assistance",
+  userNotActive:
+    "User is not active, please contact admin for further assistance",
   userNotVerified: "User is not verified",
   kycPending: "KYC Verification is pending",
   wrongPassword: "Incorrect credentials. Please try again.",
@@ -88,13 +89,13 @@ const message = {
   saleAlreadyExists: "This sale already exists",
   saleCreated: "Sale created successfully",
   saleNotFound: "Sale not found",
-  saleEnded: 'Sale ended successfully',
+  saleEnded: "Sale ended successfully",
   SaleNameAlreadyExists: "Sale name already exists",
 
   // Token
   tokenDetailsReturned: "Token details returned",
   tokenCreated: "Token created successfully",
-  icoFinalizedSuccess: 'ICO finalized successfully',
+  icoFinalizedSuccess: "ICO finalized successfully",
 
   // User
   unauthorizedUser: "User is not authorized",
@@ -116,17 +117,16 @@ const message = {
   // Analytics
   saleStatisticsFetchSuccess: "Sale statistics data fetched successfully",
   userAnalyticsFetchSuccess: "User Analytics data fetched successfully",
-  distributionAnalyticsFetchSuccess: "Distribution Analytics data fetched successfully",
+  distributionAnalyticsFetchSuccess:
+    "Distribution Analytics data fetched successfully",
 
   // Notification
   notificationFetchSuccess: "All notification fetched successfully",
   notificationMarkedRead: "Notification marked read successfully",
   allNotificationMarkedRead: "All notifications marked read successfully",
 
-
   //validation
-  validationError:"Validation failed"
-
+  validationError: "Validation failed",
 };
 
 const statusCode = {
@@ -156,12 +156,12 @@ const status = {
   RETRY: "RETRY",
   RED: "RED",
   GREEN: "GREEN",
-}
+};
 
 const roles = {
   ADMIN: "ADMIN",
   INVESTOR: "INVESTOR",
-}
+};
 
 const phoneOtpVerificationMsg = (otp) => {
   return `
@@ -172,7 +172,7 @@ const phoneOtpVerificationMsg = (otp) => {
         <h4><p style="color:black">Best Regards,<br />RVA</p></h4>
         <hr style="border:none;border-top:1px solid #eee" />
       </div>
-      `
+      `;
 };
 
 const otpOperations = {
@@ -210,15 +210,26 @@ const emailTemplateId = {
   adminNewKycRequest: "d-a8c843a428564e8b8ba66de5e8a8ab4e",
   adminResetPassword: "d-2321dc47bc884cb69584f5a06f653c5a",
   emailVerification: "d-0ef5c6c8109d4118af682e7dc85b7cd1",
-  resetPassword: "d-fcbaa17104744f608f2b1ca57af0d198"
+  resetPassword: "d-fcbaa17104744f608f2b1ca57af0d198",
 };
 
 const responseStatus = {
   success: 1,
-  failure: 0
-}
+  failure: 0,
+};
 
-
-module.exports = { message, statusCode, status, responseStatus,roles, otpOperations, phoneOtpVerificationMsg, tokenScheduleMonth, notificationCategory, userStatusOnBlockchain,
-  kycRequestNotificationMsg, kycReUploadNotificationMsg, emailTemplateId,
- };
+module.exports = {
+  message,
+  statusCode,
+  status,
+  responseStatus,
+  roles,
+  otpOperations,
+  phoneOtpVerificationMsg,
+  tokenScheduleMonth,
+  notificationCategory,
+  userStatusOnBlockchain,
+  kycRequestNotificationMsg,
+  kycReUploadNotificationMsg,
+  emailTemplateId,
+};

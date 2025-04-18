@@ -1,9 +1,12 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const privateAddressSchema = new mongoose.Schema({
+const privateAddressSchema = new mongoose.Schema(
+  {
     walletAddress: { type: String },
-}, {
-    timestamps: true
-});
+  },
+  {
+    timestamps: true,
+  }
+);
 
-module.exports = mongoose.model('PrivateAddress', privateAddressSchema);
+module.exports = mongoose.model("PrivateAddress", privateAddressSchema);
