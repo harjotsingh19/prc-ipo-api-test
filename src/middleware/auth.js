@@ -1,9 +1,9 @@
 const jwt = require("jsonwebtoken");
 const config = require("../config/config");
-const { statusCode, message } = require("../config/constants");
+const { statusCode, message, roles } = require("../config/constants");
 const { httpResponse } = require("../middleware/responseHandler");
 
-module.exports = (req, res, next) => {
+const auth = (req, res, next) => {
   try {
     let token = req.headers.authorization;
     console.log("🚀 ~ token:", token);
@@ -30,3 +30,23 @@ module.exports = (req, res, next) => {
     );
   }
 };
+
+const isAdmin = (req, res) => {
+  try {
+    const userRole = req.data.role;
+
+    if (userRole !== roles.ADMIN) {
+      throw new Error("Only Admin Can Access");
+    }
+    next();
+  } catch (error) {
+    return httpResponse(
+      res,
+      statusCode.unAuthorized,
+      false,
+      message.userIsNotAdmin
+    );
+  }
+};
+
+module.exports = { auth, isAdmin };

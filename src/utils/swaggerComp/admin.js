@@ -223,6 +223,57 @@ const getSales = {
   },
 };
 
+const getSale = {
+  get: {
+    tags: ["Sales"],
+    security: [{ bearerAuth: [] }],
+    summary: "Get Sale",
+    description: "Get Sale",
+    operationId: "getSale",
+    parameters: [
+      {
+        in: "path",
+        name: "id",
+        required: true,
+        description: "Enter id",
+        schema: {
+          type: "string",
+        },
+      },
+    ],
+    responses: apiResponse,
+  },
+};
+
+const purchaseToken = {
+  post: {
+    tags: ["sale"],
+    security: [{ bearerAuth: [] }],
+    summary: "Purchase token",
+    description: "Purchase token",
+    operationId: "purchaseToken",
+    parameters: [
+      {
+        in: "body",
+        name: "purchaseToken",
+        schema: {
+          type: "object",
+          required: ["id", "quantity"],
+          properties: {
+            id: {
+              type: "string",
+            },
+            quantity: {
+              type: "string",
+            },
+          },
+        },
+      },
+    ],
+    responses: apiResponse,
+  },
+};
+
 const createSale = {
   post: {
     tags: ["Admin"],
@@ -236,39 +287,20 @@ const createSale = {
         name: "saleData",
         schema: {
           type: "object",
-          required: [
-            "saleId",
-            "startTime",
-            "endTime",
-            "tokenPrice",
-            "txnHash",
-            "blockNumber",
-            "blockHash",
-            "txnIndex",
-          ],
+          required: ["name", "startTime", "endTime", "tokenPrice"],
           properties: {
-            saleId: {
-              type: "number",
+            name: {
+              type: "string",
             },
             startTime: {
-              type: "date",
+              type: "string",
+              format: "date-time",
             },
             endTime: {
-              type: "date",
+              type: "string",
+              format: "date-time",
             },
             tokenPrice: {
-              type: "number",
-            },
-            txnHash: {
-              type: "string",
-            },
-            blockNumber: {
-              type: "number",
-            },
-            blockHash: {
-              type: "string",
-            },
-            txnIndex: {
               type: "number",
             },
           },
@@ -691,4 +723,6 @@ module.exports = {
   updateInvestorOnchainId,
   getClaimTokenHistory,
   downloadPdf,
+  getSale,
+  purchaseToken,
 };

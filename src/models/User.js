@@ -104,6 +104,9 @@ const userSchema = new mongoose.Schema(
     //   type: Boolean,
     //   default: false
     // },
+    customerStripeId: {
+      type: String,
+    },
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
 );

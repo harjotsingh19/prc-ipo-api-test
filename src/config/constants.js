@@ -56,6 +56,8 @@ const message = {
   walletAddressAddedSuccessfully: "Wallet address added successfully",
   adminAlreadyExists: "Admin already exists",
   userAlreadyExists: "User already exists",
+  userNotCreatedOnStripe: "Error creating user on stripe",
+  saleNotFound: "Sale not Active or Exist",
   userDoesnotExists: "User doesn't exists",
   userNotActive:
     "User is not active, please contact admin for further assistance",

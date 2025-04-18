@@ -14,4 +14,7 @@ module.exports = {
 
   sendGridEmailAddress: process.env.SEND_GRID_EMAIL_ADDRESS,
   sendGridApiKey: process.env.SEND_GRID_API_KEY,
+
+  //stripe
+  STRIPE_TOKEN: process.env.STRIPE_TOKEN,
 };
