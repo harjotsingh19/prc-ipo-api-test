@@ -9,7 +9,6 @@
     "leizongmin.node-module-intellisense",
     "christian-kohler.npm-intellisense",
     "esbenp.prettier-vscode",
-    "visualstudioexptteam.vscodeintellicode",
-    "Prisma.prisma"
+    "visualstudioexptteam.vscodeintellicode"
   ]
 }
