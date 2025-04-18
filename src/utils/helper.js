@@ -24,4 +24,61 @@ const isCurrentUser = async (loginUserId, paramsId) => {
     return (loginUserId && (loginUserId.toString() == paramsId.toString()));
 }
 
-module.exports = { generateOTP, isAdmin, isCurrentUser };
+
+const addFiltersToWhereClause = (filters) => {
+    let searchClause = {};
+    if (filters.filterString) {
+      searchClause = {
+        $or:
+          filters.filterString &&
+          filters?.searchByColumns.map((name) => ({
+            [`${name}`]: filters.filterString,
+          })),
+      };
+    }
+  
+    let filterDateClause = {};
+    if ((filters.fromDate || filters.toDate) && filters.dateFilterColumn) {
+      filterDateClause = addDateFiltersToWhereClause(
+        filters.dateFilterColumn,
+        filters.fromDate,
+        filters.toDate
+      );
+    }
+  
+    let statusClause = {};
+    if (filters.filterStatus) {
+      statusClause = { active: filters.filterStatus };
+    }
+  
+    return {
+      $and: [searchClause, statusClause, filterDateClause],
+    };
+  };
+  
+  const addDateFiltersToWhereClause = (columns, startDate, endDate) => {
+    let filterClause = {};
+    if (!startDate) {
+      filterClause[columns] = {
+        $lte: moment(endDate).set({ hour: 23, minute: 59 }),
+      };
+    } else if (!endDate) {
+      filterClause[columns] = { $gte: moment(startDate) };
+    } else {
+      filterClause[columns] = {
+        $and: [
+          { $gte: moment(startDate) },
+          { $lte: moment(endDate).set({ hour: 23, minute: 59 }) },
+        ],
+      };
+    }
+    return filterClause;
+  };
+  
+  module.exports = {
+    generateOTP,
+    isAdmin,
+    isCurrentUser,
+    addFiltersToWhereClause,
+  };
+  
