@@ -3,10 +3,20 @@ const router = express.Router();
 const adminController = require('../controllers/adminController');
 const auth = require("../middleware/auth")
 const adminValidator = require('../utils/validators/admin');
+const { isAmin} = require("../utils/helper"); 
 
 router.get("/investors", auth, [adminValidator.validateInvestorsList, adminValidator.result], adminController.getInvestors);
 router.get("/investments", auth, adminController.getAllInvestments);
-router.post("/sale/create", auth, adminController.createSale)
+// router.post("/sale/create", auth, adminController.createSale)
+
+
+router.post(
+    "/sales",
+    auth,
+    [adminValidator.validateCreateSale, adminValidator.result],
+    adminController.createSale
+  );
+
 router.get("/sales", auth, [adminValidator.validateSaleList, adminValidator.result], adminController.getSales);
 router.get("/investorKyc", auth, [adminValidator.validateInvestorKYCList, adminValidator.result], adminController.getInvestorKyc)
 router.post("/setAdminAddress", auth, adminController.setAdminAddress)

@@ -111,33 +111,107 @@ const getAllInvestments = {
     },
 };
 
+// const getSales = {
+//     get: {
+//         tags: ["Admin"],
+//         security: [{ bearerAuth: [] }],
+//         summary: "Get Sales listing",
+//         description: "Get Sales listing",
+//         operationId: "getAllSales",
+//         parameters: [{
+//             in: 'query',
+//             name: 'page',
+//             required: true,
+//             description: 'Enter page number',
+//             schema: {
+//                 type: 'string',
+//             },
+//         }, {
+//             in: 'query',
+//             name: 'pageSize',
+//             required: true,
+//             description: 'Enter page size',
+//             schema: {
+//                 type: 'string',
+//             },
+//         }],
+//         responses: apiResponse,
+//     },
+// };
+
+
 const getSales = {
     get: {
-        tags: ["Admin"],
-        security: [{ bearerAuth: [] }],
-        summary: "Get Sales listing",
-        description: "Get Sales listing",
-        operationId: "getAllSales",
-        parameters: [{
-            in: 'query',
-            name: 'page',
-            required: true,
-            description: 'Enter page number',
-            schema: {
-                type: 'string',
-            },
-        }, {
-            in: 'query',
-            name: 'pageSize',
-            required: true,
-            description: 'Enter page size',
-            schema: {
-                type: 'string',
-            },
-        }],
-        responses: apiResponse,
+      tags: ["Sales"],
+      security: [{ bearerAuth: [] }],
+      summary: "Get Sales listing",
+      description: "Get Sales listing",
+      operationId: "getAllSales",
+      parameters: [
+        {
+          in: "query",
+          name: "page",
+          required: true,
+          description: "Enter page number",
+          schema: {
+            type: "string",
+          },
+        },
+        {
+          in: "query",
+          name: "pageSize",
+          required: true,
+          description: "Enter page size",
+          schema: {
+            type: "string",
+          },
+        },
+        {
+          in: "query",
+          name: "search",
+          schema: {
+            type: "string",
+          },
+          description: "Enter the Name or the name to search sale",
+        },
+        {
+          in: "query",
+          name: "status",
+          schema: {
+            type: "string",
+          },
+          description: "The Status you have selected is Invalid.",
+        },
+        {
+          in: "query",
+          name: "fromDate",
+          schema: {
+            type: "date",
+          },
+          description: "User Registration 'From Date' is not in correct format.",
+        },
+        {
+          in: "query",
+          name: "toDate",
+          schema: {
+            type: "date",
+          },
+          description: "User Registration 'To Date' is not in correct format.",
+        },
+        {
+          in: "query",
+          name: "sortBy",
+          schema: {
+            type: "integer",
+          },
+          description: '[{"id":"username","desc":true}]',
+        },
+      ],
+      responses: apiResponse,
     },
-};
+  };
+  
+
 
 const createSale = {
     post: {

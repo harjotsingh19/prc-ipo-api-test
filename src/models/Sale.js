@@ -22,11 +22,11 @@ const saleSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    status: {
-      type: String,
-      enum: ["active", "upcoming", "closed"],
-      default: "upcoming",
-    },
+    // status: {
+    //   type: String,
+    //   enum: ["active", "upcoming", "closed"],
+    //   default: "upcoming",
+    // },
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
 );

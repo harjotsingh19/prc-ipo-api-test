@@ -18,22 +18,22 @@ const tokenSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  availableTokens: {
-    type: Number,
-    default: 1000000000  // Example available tokens, can be adjusted
-  },
-  claimedTokens: {
-    type: Number,
-    default: 0
-  },
-  icoFinalized: {
-    type: Boolean,
-    default: false
-  },
-  tokenDecimals: {
-    type: Number,
-    default: 18
-  },
+  // availableTokens: {
+  //   type: Number,
+  //   default: 1000000000  // Example available tokens, can be adjusted
+  // },
+  // claimedTokens: {
+  //   type: Number,
+  //   default: 0
+  // },
+  // icoFinalized: {
+  //   type: Boolean,
+  //   default: false
+  // },
+  // tokenDecimals: {
+  //   type: Number,
+  //   default: 18
+  // },
   tokenImage: {
     type: String,
     default: ""  // URL to token image, if any

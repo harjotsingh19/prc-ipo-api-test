@@ -89,6 +89,7 @@ const message = {
   saleCreated: "Sale created successfully",
   saleNotFound: "Sale not found",
   saleEnded: 'Sale ended successfully',
+  SaleNameAlreadyExists: "Sale name already exists",
 
   // Token
   tokenDetailsReturned: "Token details returned",
