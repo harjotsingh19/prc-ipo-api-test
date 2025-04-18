@@ -2,48 +2,48 @@
 const mongoose = require('mongoose');
 
 const txnSchema = new mongoose.Schema({
-  txnHash: {
-    type: String
-  },
-  blockNumber: {
-    type: Number
-  },
-  blockHash: {
-    type: String
-  },
-  txnIndex: {
-    type: Number
-  },
-  gas: {
-    type: Number
-  },
-  gasPrice: {
-    type: Number
-  },
-  from: {
+  paymentId: {
     type: String,
+    required: true,
   },
-  to: {
-    type: String,
-  },
-  value: {
-    type: Number
-  },
-  tokenAmount: {
-    type: Number
-  },
-  tokenPrice: {
-    type: Number
-  },
-  assetAmount: {
-    type: Number
-  },
-  asset: {
-    type: String
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
   },
   saleId: {
-    type: mongoose.Schema.Types.ObjectId
-  }
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Sale',
+  },
+  // amountPaid: {
+  //   type: Number,
+  //   required: true,
+  // },
+  // tokenAmount: {
+  //   type: Number,
+  //   required: true,
+  // },
+
+  tokenIn: {
+    type: String,
+    required: true,   //100 pRC
+  },
+
+  tokenOut: {
+    type: String,
+    required: true,   //100 USD
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'completed', 'failed'],
+    default: 'pending',
+  },
+  paymentType: {
+    type: String,  // e.g., 'credit card', 'debit card', 'bank transfer', etc.
+  },
+  transactionDate: {
+    type: Date,
+    default: Date.now,
+  },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 module.exports = mongoose.model('Transaction', txnSchema);

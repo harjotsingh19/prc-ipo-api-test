@@ -36,10 +36,10 @@ const userSchema = new mongoose.Schema({
   //   type: String,
   //   default: "",
   // },
-  // walletAddress: {
-  //   type: String,
-  //   default: "",
-  // },
+  walletAddress: {
+    type: String,
+    default: "",
+  },
   status: {
     type: String,
     default: ""

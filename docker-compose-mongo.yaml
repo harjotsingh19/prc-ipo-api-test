@@ -1,0 +1,48 @@
+version: '3.8'
+
+networks:
+  netname:
+    name: test-network
+# networks:
+#   netname:
+#     name: stripe-network    
+# services:
+#   mongodb:
+#     container_name: mongodb
+#     image: mongo:6-jammy
+#     ports:
+#       - '27018:27017'
+#     volumes:
+#       - test-db-data:/data/db
+#     networks:
+#       - netname  
+# volumes:
+#   test-db-data:
+
+#   version: '3.8'
+
+# networks:
+#   netname:
+#     name: test-network
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb-prc
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin
+      - MONGO_INITDB_DATABASE=prc-ico-db
+    volumes:
+      - mongo-data:/data/db  
+    networks:
+      - netname  
+    # environment:
+    #   MONGO_INITDB_ROOT_USERNAME: admin
+    #   MONGO_INITDB_ROOT_PASSWORD: Admin@123
+    #   MONGO_INITDB_DATABASE: admin  # Set default database name
+
+volumes:
+  mongo-data:
