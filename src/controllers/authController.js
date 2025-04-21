@@ -209,6 +209,7 @@ const login = async (req, res) => {
       config.refreshTokenSecret,
       config.refreshTokenExpiry
     );
+    console.log("🚀 ~ login ~ refreshToken:", refreshToken);
 
     const resp = {
       userId: userData._id,
@@ -220,6 +221,7 @@ const login = async (req, res) => {
       accessToken,
       refreshToken,
     };
+    console.log("🚀 ~ login ~ resp.accessToken:", resp.accessToken);
 
     const refreshTokenData = {
       userId: userData._id,

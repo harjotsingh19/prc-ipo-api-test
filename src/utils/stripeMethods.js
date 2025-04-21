@@ -2,33 +2,161 @@ const config = require("../config/config");
 const secret_key = config.STRIPE_TOKEN;
 const stripe = require("stripe")(secret_key);
 
+// const createSession = async (
+//   customerId,
+//   amount,
+//   currency,
+//   mode,
+//   quantity,
+//   successUrl,
+//   errorUrl,
+//   metaData,
+//   couponId
+// ) => {
+//   try {
+//     const sessionPayload = {
+//       mode,
+//       customer: customerId,
+//       payment_method_types: ["card"],
+//       metadata: metaData,
+//       line_items: [
+//         {
+//           price_data: {
+//             currency: currency,
+//             product_data: {
+//               name: "PRC TOKEN",
+//               description: "One-time purchase",
+//             },
+//             unit_amount: amount,
+//           },
+//           quantity,
+//         },
+//       ],
+//       success_url: successUrl,
+//       cancel_url: errorUrl,
+//     };
+
+//     if (couponId) {
+//       sessionPayload.discounts = [
+//         {
+//           coupon: couponId,
+//         },
+//       ];
+//     }
+
+//     console.log("running payment");
+
+//     const sessionData = await stripe.checkout.sessions.create(sessionPayload);
+//     if (sessionData) {
+//       return { success: true, data: { resData: sessionData } };
+//     } else {
+//       return { success: false, data: { resData: {} } };
+//     }
+//   } catch (error) {
+//     console.log("error while paying: ", error);
+//     return { success: false, data: { resData: {} }, error };
+//   }
+// };
+
+// const createSession = async (
+//   customerId,
+//   amount,
+//   currency,
+//   mode,
+//   successUrl,
+//   errorUrl,
+//   metaData,
+//   couponId,
+//   quantity
+// ) => {
+//   try {
+//     // Log all parameters and their types
+//     console.log("customerId:", customerId, typeof customerId);
+//     console.log("amount:", amount, typeof amount);
+//     console.log("currency:", currency, typeof currency);
+//     console.log("mode:", mode, typeof mode);
+//     console.log("successUrl:", successUrl, typeof successUrl);
+//     console.log("errorUrl:", errorUrl, typeof errorUrl);
+//     console.log("metaData:", metaData, typeof metaData);
+//     console.log("couponId:", couponId, typeof couponId);
+//     console.log("quantity:", quantity, typeof quantity);
+
+//     const sessionPayload = {
+//       mode,
+//       customer: customerId,
+//       payment_method_types: ["card"],
+//       metadata: metaData,
+//       line_items: [
+//         {
+//           price_data: {
+//             currency: currency,
+//             product_data: {
+//               name: "PRC TOKEN",
+//               description: "One-time purchase",
+//             },
+//             unit_amount: amount,
+//           },
+//           quantity: Number(quantity), // ensure quantity is numeric
+//         },
+//       ],
+//       success_url: successUrl,
+//       cancel_url: errorUrl,
+//     };
+
+//     if (couponId) {
+//       sessionPayload.discounts = [{ coupon: couponId }];
+//     }
+
+//     const sessionData = await stripe.checkout.sessions.create(sessionPayload);
+//     // console.log("🚀 ~ sessionData:", sessionData);
+//     return { success: true, data: { url: sessionData.url } };
+//   } catch (error) {
+//     console.log("error while paying: ", error);
+//     return { success: false, data: { resData: {} }, error };
+//   }
+// };
+
 const createSession = async (
   customerId,
   amount,
   currency,
   mode,
-  quantity,
   successUrl,
   errorUrl,
-  metaData
+  metaData,
+  couponId,
+  quantity
 ) => {
   try {
+    // Log all parameters and their types
+    console.log("customerId:", customerId, typeof customerId);
+    console.log("amount:", amount, typeof amount);
+    console.log("currency:", currency, typeof currency);
+    console.log("mode:", mode, typeof mode);
+    console.log("successUrl:", successUrl, typeof successUrl);
+    console.log("errorUrl:", errorUrl, typeof errorUrl);
+    console.log("metaData:", metaData, typeof metaData);
+    console.log("couponId:", couponId, typeof couponId);
+    console.log("quantity:", quantity, typeof quantity);
+
     const sessionPayload = {
       mode,
       customer: customerId,
       payment_method_types: ["card"],
+      payment_method_options: {
+        card: {},
+      },
       metadata: metaData,
       line_items: [
         {
           price_data: {
             currency: currency,
             product_data: {
-              name: "My Product",
-              description: "One-time purchase",
+              name: "PRC TOKEN",
             },
-            unit_amount: amount,
+            unit_amount: Number(amount),
           },
-          quantity,
+          quantity: Number(quantity),
         },
       ],
       success_url: successUrl,
@@ -36,20 +164,13 @@ const createSession = async (
     };
 
     if (couponId) {
-      sessionPayload.discounts = [
-        {
-          coupon: couponId,
-        },
-      ];
+      sessionPayload.discounts = [{ coupon: couponId }];
     }
+
     const sessionData = await stripe.checkout.sessions.create(sessionPayload);
-    if (sessionData) {
-      return { success: true, data: { resData: sessionData } };
-    } else {
-      return { success: false, data: { resData: {} } };
-    }
+    return { success: true, data: { url: sessionData.url } };
   } catch (error) {
-    console.log("error: ", error);
+    console.log("error while paying: ", error);
     return { success: false, data: { resData: {} }, error };
   }
 };

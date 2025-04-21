@@ -94,10 +94,19 @@ const message = {
   saleEnded: "Sale ended successfully",
   SaleNameAlreadyExists: "Sale name already exists",
 
+  //stripe
+  missingMetadata: "Required metadata is missing in the session.",
+
+  sentSessionUrl: "payment url sent successfully",
+  paymentStatusNotPaid:
+    "Payment status is not 'paid'. Please check the payment status.",
+
   // Token
   tokenDetailsReturned: "Token details returned",
   tokenCreated: "Token created successfully",
   icoFinalizedSuccess: "ICO finalized successfully",
+  tokenDocumentNotFound: "Token document not found.",
+  tokensCreditedSuccessfully: "Tokens credited successfully.",
 
   // User
   unauthorizedUser: "User is not authorized",
@@ -126,6 +135,9 @@ const message = {
   notificationFetchSuccess: "All notification fetched successfully",
   notificationMarkedRead: "Notification marked read successfully",
   allNotificationMarkedRead: "All notifications marked read successfully",
+
+  //webhook
+  webhookProcessingError: "Error processing the webhook.",
 
   //validation
   validationError: "Validation failed",
