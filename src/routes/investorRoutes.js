@@ -18,5 +18,6 @@ router.get(
   [investorValidator.validateTokenClaimHistoryList, investorValidator.result],
   investorController.getTokenClaimHistory
 );
+router.get("/contribution", investorController.getTokenContribution);
 
 module.exports = router;
