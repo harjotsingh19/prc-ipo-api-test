@@ -76,9 +76,22 @@ const getTokenClaimHistory = {
   },
 };
 
+const getContributions = {
+  get: {
+    tags: ["Investor"],
+    security: [{ bearerAuth: [] }],
+    summary: "Get token contribution received",
+    description: "Get token contribution received",
+    operationId: "getContributions",
+    parameters: [],
+    responses: apiResponse,
+  },
+};
+
 module.exports = {
   getInvestments,
   getKycStatus,
   viewVestingSchedule,
   getTokenClaimHistory,
+  getContributions,
 };

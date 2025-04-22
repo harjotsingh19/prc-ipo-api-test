@@ -60,8 +60,9 @@ const swaggerDefinition = {
       "/admin/investors-investments/{walletAddress}":
         adminComp.getInvestorInvestments,
       "/admin/investments": adminComp.getAllInvestments,
-      "/admin/sales": adminComp.getSales,
-      "/admin/sale/create": adminComp.createSale,
+      "/sales": adminComp.getSales,
+      "/sales/{id}": adminComp.getSale,
+      "/admin/sales": adminComp.createSale,
       "/admin/token": adminComp.createGetToken,
       "/admin/address-whitelist": adminComp.whitelistWalletAddress,
       "/admin/setAdminAddress": adminComp.setAdminWalletAddress,
@@ -81,13 +82,14 @@ const swaggerDefinition = {
       "/investor/investment/vesting-schedule/{id}":
         investorComp.viewVestingSchedule,
       "/investor/claim-history": investorComp.getTokenClaimHistory,
+      "/investor/contribution": investorComp.getContributions,
       "/kyc/uploadDocs": uploadDocs,
     },
     schemes: ["http", "https"],
     securityDefinitions: {
       bearerAuth: {
         type: "apiKey",
-        scheme: "bearer",
+        scheme: "Bearer",
         bearerFormat: "JWT",
         name: "Authorization",
         in: "header",
