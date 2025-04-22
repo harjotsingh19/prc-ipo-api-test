@@ -10,15 +10,8 @@ const TokenClaimHistory = require("../models/TokenClaimHistory");
 
 const getInvestments = async (req, res) => {
   try {
-    // 1. Extract pagination params
-    const pageSize = parseInt(req.query.pageSize) || 10;
-    const page = parseInt(req.query.page) || 2;
-    const skipCount = (page - 1) * pageSize;
-
-    // 2. Condition for filtering either a specific user or all users
+    // 1. Condition for filtering either a specific user or all users
     let condition = {};
-
-    console.log("🚀 ~ getInvestments ~ req.data:", req.data);
 
     if (req.data.id && req.data.role === "INVESTOR") {
       condition = { _id: new mongoose.Types.ObjectId(req.data.id) };
@@ -26,7 +19,7 @@ const getInvestments = async (req, res) => {
 
     console.log("🚀 ~ getInvestments ~ condition:", condition);
 
-    // 3. Aggregation pipeline
+    // 2. Aggregation pipeline
     const investments = await User.aggregate([
       { $match: condition },
       {
@@ -36,8 +29,6 @@ const getInvestments = async (req, res) => {
           pipeline: [
             { $match: { $expr: { $eq: ["$userId", "$$userId"] } } },
             // { $sort: { created_at: -1 } },
-            { $skip: skipCount }, // Skip transactions for pagination
-            { $limit: pageSize }, // Limit to the page size
           ],
           as: "transactions",
         },
@@ -67,7 +58,11 @@ const getInvestments = async (req, res) => {
           _id: "$_id",
           walletAddress: { $first: "$walletAddress" },
           transactions: { $push: "$transactions" },
-          totalTokenBought: { $sum: "$transactions.tokenIn" },
+          totalTokenBought: {
+            $sum: {
+              $toDouble: "$transactions.tokenIn",
+            },
+          },
         },
       },
       {
@@ -87,32 +82,14 @@ const getInvestments = async (req, res) => {
           "transactions.saleDetails.tokenPrice": 1,
         },
       },
-      // { $skip: skipCount }, // 👈 Pagination: Skip X documents
-      // { $limit: pageSize }, // 👈 Pagination: Limit to pageSize
     ]);
-
-    // 4. Optional total count for frontend
-    const totalUser = await User.countDocuments(condition);
-    console.log("🚀 ~ getInvestments ~ totalCount:", totalUser);
-
-    // Assuming 'Transaction' is the model for your transactions collection
-    // const totalTransactions = await Transaction.countDocuments(condition);
-    // console.log("🚀 ~ getTransactions ~ totalTransactions:", totalTransactions);
 
     return httpResponse(
       res,
       statusCode.ok,
       true,
       message.allInvestmentsReturned,
-      {
-        data: investments,
-        // pagination: {
-        //   total: totalTransactions,
-        //   page,
-        //   pageSize,
-        //   totalPages: Math.ceil(totalTransactions / pageSize),
-        // },
-      }
+      investments
     );
   } catch (error) {
     return httpResponse(res, statusCode.errorPage, false, error.message);
@@ -534,9 +511,39 @@ const getTokenClaimHistory = async (req, res) => {
   }
 };
 
+const getTokenContribution = async (req, res) => {
+  try {
+    const totalTokenOut = await Transaction.aggregate([
+      {
+        $addFields: {
+          tokenOutNumeric: { $toDouble: "$tokenOut" },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$tokenOutNumeric" },
+        },
+      },
+    ]);
+    const totalContribution = totalTokenOut[0]?.total || 0;
+
+    return httpResponse(
+      res,
+      statusCode.ok,
+      true,
+      message.totalContributionFetchSuccess,
+      { totalContribution }
+    );
+  } catch (error) {
+    return httpResponse(res, statusCode.errorPage, false, error.message);
+  }
+};
+
 module.exports = {
   getInvestments,
   getKycStatus,
   viewVestingSchedule,
   getTokenClaimHistory,
+  getTokenContribution,
 };
