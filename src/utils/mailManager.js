@@ -17,8 +17,10 @@ exports.sendEmail = async (recipient, templateId, template_data) => {
   console.log("🚀 ~ exports.sendEmail= ~ emailBody:", emailBody);
   try {
     const response = await sendGridMail.send(emailBody);
+    console.log("🚀 ~ exports.sendEmail= ~ response:", response);
     return response;
   } catch (e) {
+    console.log("🚀 ~ exports.sendEmail= ~ e:", e.response.body);
     return e;
   }
 };

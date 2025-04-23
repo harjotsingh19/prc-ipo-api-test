@@ -24,7 +24,6 @@ router.post(
   authController.verifyOTP
 );
 
-// router.post("/verifyOtp", authController.verifyOTP);
 router.post(
   "/login",
   validator.validateUserLogin(),

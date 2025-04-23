@@ -28,7 +28,6 @@ const handleCheckoutSessionCompleted = async (event) => {
       payment_intent: paymentIntentId,
       customer: customerId,
       metadata,
-      amount_total: amountTotal,
       currency,
       payment_status: paymentStatus,
     } = session;
@@ -66,7 +65,7 @@ const handleCheckoutSessionCompleted = async (event) => {
     }
     console.error("Token document not found");
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).exec();
     if (!user) {
       console.error("User not found for ID:", userId);
       return httpResponse(
@@ -95,7 +94,7 @@ const handleCheckoutSessionCompleted = async (event) => {
     await transaction.save();
 
     console.log("Transaction saved:", transaction);
-    let token = await Token.findOne();
+    let token = await Token.findOne().exec();
     if (!token) {
       console.log("Token document not found. Creating a new one...");
       token = new Token({

@@ -103,12 +103,12 @@ const {
 const purchaseToken = async (req, res) => {
   try {
     const userId = req.data.id;
-    const { id: saleId, quantity, tokenPrice } = req.body; // tokenPrice in cents
+    const { id: saleId, quantity, tokenPrice } = req.body;
     console.log("🚀 ~ purchaseToken ~ req:", req.body);
 
     const userData = await User.findById({
-      _id: new mongoose.Types.ObjectId(userId),
-    });
+      _id: new mongoose.Types.ObjectId(`${userId}`),
+    }).exec();
 
     if (!userData) {
       return httpResponse(
@@ -119,9 +119,20 @@ const purchaseToken = async (req, res) => {
       );
     }
 
+    const saleData = await Sale.findById(saleId).exec();
+
+    if (saleData?.active !== true) {
+      return httpResponse(
+        res,
+        statusCode.errorPage,
+        false,
+        message.saleNotFound
+      );
+    }
+
     let customerStripeId = userData?.customerStripeId;
     if (!customerStripeId) {
-      const customerData = await createCustomer(userData.email);
+      const customerData = await createCustomer(userData.email).exec();
       if (!customerData.isSuccess) {
         return httpResponse(
           res,
@@ -136,32 +147,40 @@ const purchaseToken = async (req, res) => {
       await userData.save();
     }
 
-    const saleData = await Sale.findById(saleId);
-    if (saleData?.active !== true) {
-      return httpResponse(
-        res,
-        statusCode.errorPage,
-        false,
-        message.saleNotFound
-      );
-    }
+    // const checkoutSession = await createSession(
+    //   customerStripeId,
+    //   tokenPrice, // tokenPrice in cents
+    //   "usd",
+    //   "payment",
+    //   `${config.userFrontendUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
+    //   `${config.userFrontendUrl}/cancel`,
+    //   {
+    //     userId: userId.toString(),
+    //     saleId: saleData._id.toString(),
+    //     price: tokenPrice.toString(), // Save tokenPrice in metadata
+    //     quantity: quantity.toString(),
+    //   },
+    //   "",
+    //   quantity
+    // );
 
-    const checkoutSession = await createSession(
-      customerStripeId,
-      tokenPrice, // tokenPrice in cents
-      "usd",
-      "payment",
-      `${config.userFrontendUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
-      `${config.userFrontendUrl}/cancel`,
-      {
+    const checkoutSession = await createSession({
+      customerId: customerStripeId,
+      amount: tokenPrice, // in cents
+      currency: "usd",
+      mode: "payment",
+      successUrl: `${config.userFrontendUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
+      errorUrl: `${config.userFrontendUrl}/cancel`,
+      metaData: {
         userId: userId.toString(),
         saleId: saleData._id.toString(),
-        price: tokenPrice.toString(), // Save tokenPrice in metadata
+        price: tokenPrice.toString(),
         quantity: quantity.toString(),
       },
-      "",
-      quantity
-    );
+      couponId: "", // optional
+      quantity: quantity,
+    });
+    console.log("🚀 ~ purchaseToken ~ checkoutSession:", checkoutSession);
 
     if (!checkoutSession.success) {
       return httpResponse(

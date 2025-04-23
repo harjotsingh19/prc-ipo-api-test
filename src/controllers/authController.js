@@ -23,16 +23,28 @@ const { sendEmail } = require("../utils/mailManager");
 const registerInvestor = async (req, res) => {
   try {
     const { firstName, lastName, email, password, role } = req.body;
-    const userExists = await User.findOne({ email: email.toLowerCase() });
+    const userEmail = email.toLowerCase();
+
+    const userExists = await User.findOne({ email: userEmail }).exec();
+
+    let existingStripeCustomerId = null;
 
     if (userExists) {
-      return httpResponse(
-        res,
-        statusCode.errorPage,
-        false,
-        message.userAlreadyExists,
-        null
-      );
+      if (!userExists.isEmailVerified) {
+        // ✅ Store the existing Stripe ID before deleting
+        existingStripeCustomerId = userExists.customerStripeId || null;
+
+        await Otp.deleteMany({ userId: userExists._id }).exec();
+        await User.deleteOne({ email: userEmail }).exec();
+      } else {
+        return httpResponse(
+          res,
+          statusCode.errorPage,
+          false,
+          message.userEmailAlreadyExists,
+          {}
+        );
+      }
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -42,16 +54,22 @@ const registerInvestor = async (req, res) => {
       timestamp: Date.now(),
       reason: "",
     };
-    const userEmail = email.toLowerCase();
-    const customerData = await createCustomer(userEmail);
-    if (!customerData.isSuccess) {
-      return httpResponse(
-        res,
-        statusCode.errorPage,
-        false,
-        message.userNotCreatedOnStripe,
-        null
-      );
+
+    let customerId;
+    if (existingStripeCustomerId) {
+      customerId = existingStripeCustomerId;
+    } else {
+      const customerData = await createCustomer(userEmail);
+      if (!customerData.isSuccess) {
+        return httpResponse(
+          res,
+          statusCode.errorPage,
+          false,
+          message.userNotCreatedOnStripe,
+          null
+        );
+      }
+      customerId = customerData.customerId;
     }
 
     const user = await User.create({
@@ -63,8 +81,9 @@ const registerInvestor = async (req, res) => {
       isActive: true,
       status: status.NEW,
       statusHistory: statusHistory,
-      customerStripeId: customerData.customerId,
+      customerStripeId: customerId,
     });
+    console.log("🚀 ~ registerInvestor ~ user:", user);
 
     if (user) {
       const otp = await generateOTP(user._id, otpOperations.emailVerification);
@@ -82,6 +101,7 @@ const registerInvestor = async (req, res) => {
       user
     );
   } catch (error) {
+    console.log("error here ===>", error.message);
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
@@ -92,29 +112,39 @@ const verifyOTP = async (req, res) => {
     const { otp, userId, operation } = req.body;
     console.log("🚀 ~ verifyOTP ~ req.body:", req.body);
 
-    const otpData = await Otp.findOne({ userId: userId, operation }).populate(
-      "userId"
-    );
+    const otpData = await Otp.findOne({ userId: userId, operation })
+      .populate("userId")
+      .exec();
     console.log("🚀 ~ verifyOTP ~ otpData:", otpData);
     if (!otpData) {
-      return httpResponse(res, statusCode.errorPage, false, message.otpExpired);
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.otpExpired
+      );
     }
 
     if (otpData.userId.isEmailVerified) {
       return httpResponse(
         res,
-        statusCode.errorPage,
+        statusCode.badRequest,
         false,
         message.userAlreadyVerified
       );
     }
 
     if (otpData.otp !== otp) {
-      return httpResponse(res, statusCode.errorPage, false, message.invalidOtp);
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.invalidOtp
+      );
     }
 
     // delete otp data
-    await otpData.deleteOne({ userId, operation });
+    await otpData.deleteOne({ userId, operation }).exec();
 
     const statusHistory = { timestamp: Date.now(), reason: "" };
     const updateUserData = {
@@ -143,7 +173,7 @@ const verifyOTP = async (req, res) => {
       {
         new: true,
       }
-    );
+    ).exec();
 
     const accessToken = await jwtSign(
       updatedUserData,
@@ -164,7 +194,7 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const userData = await User.findOne({ email });
+    const userData = await User.findOne({ email }).exec();
 
     if (!userData) {
       return httpResponse(
@@ -223,15 +253,11 @@ const login = async (req, res) => {
     };
     console.log("🚀 ~ login ~ resp.accessToken:", resp.accessToken);
 
-    const refreshTokenData = {
-      userId: userData._id,
-      refreshToken: refreshToken,
-    };
     const storeRefreshToken = await RefreshTokens.findOneAndUpdate(
       { userId: userData._id },
       { refreshToken: refreshToken },
       { upsert: true, new: true }
-    );
+    ).exec();
     console.log("🚀 ~ login ~ storeRefreshToken:", storeRefreshToken);
 
     return httpResponse(
@@ -250,7 +276,8 @@ const login = async (req, res) => {
 const resendOtp = async (req, res) => {
   try {
     const { userId, operation } = req.body;
-    const userData = await User.findById(userId);
+    const userData = await User.findById(userId).exec();
+    console.log("🚀 ~ resendOtp ~ userData:", userData);
 
     if (!userData) {
       return httpResponse(
@@ -273,14 +300,21 @@ const resendOtp = async (req, res) => {
         message.userAlreadyVerified
       );
     }
+    await Otp.deleteMany({ userId: userData._id, operation }).exec();
 
     const otp = await generateOTP(userData._id, operation);
+    console.log("🚀 ~ resendOtp ~ otp:", otp);
 
     if (operation == otpOperations.emailVerification) {
-      await sendEmail(userData.email, emailTemplateId.emailVerification, {
-        user_name: userData.name,
-        otp,
-      });
+      const t = await sendEmail(
+        userData.email,
+        emailTemplateId.emailVerification,
+        {
+          user_name: userData.firstName,
+          otp,
+        }
+      );
+      console.log("🚀 ~ resendOtp ~ t:", t.response.body);
     }
 
     return httpResponse(res, statusCode.ok, true, message.otpResentSuccess);
@@ -294,7 +328,7 @@ const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).exec();
 
     if (!user) {
       return httpResponse(
@@ -321,7 +355,9 @@ const forgotPassword = async (req, res) => {
 
     console.log("🚀 ~ forgotPassword ~ frontendUrl:", frontendUrl);
 
-    const resetLink = `${frontendUrl}/auth/reset-password?token=${resetToken}`;
+    const resetLink = `${frontendUrl}/?resetToken=${resetToken}`;
+
+    console.log("🚀 ~ forgotPassword ~ resetLink:", resetLink);
 
     await sendEmail(user.email, emailTemplateId.resetPassword, {
       resetLink,
@@ -337,11 +373,12 @@ const resetPassword = async (req, res) => {
   try {
     const { newPassword, confirmPassword } = req.body;
     const token = req.params.token;
+    console.log("🚀 ~ resetPassword ~ token:", token);
 
     const user = await User.findOne({
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: Date.now() },
-    });
+    }).exec();
 
     if (!user) {
       return httpResponse(
@@ -374,6 +411,7 @@ const resetPassword = async (req, res) => {
 
     return httpResponse(res, statusCode.ok, true, message.passwordUpdated);
   } catch (error) {
+    console.log("🚀 ~ resetPassword ~ error:", error.message);
     return httpResponse(res, statusCode.badRequest, false, error.message);
   }
 };
@@ -452,7 +490,7 @@ const refreshToken = async (req, res) => {
     const { refreshToken } = req.body;
     const decoded = jwt.verify(refreshToken, config.refreshTokenSecret);
     console.log("🚀 ~ refreshToken ~ decoded:", decoded);
-    const userData = await User.findById(decoded.id);
+    const userData = await User.findById(decoded.id).exec();
     if (!userData) {
       return httpResponse(
         res,

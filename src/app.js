@@ -9,7 +9,6 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
 const { swaggerDefinition } = require("./utils/swagger.js");
 require("./db/mongoose");
-require("./utils/socketManager");
 const swaggerSpec = swaggerJsDoc(swaggerDefinition);
 const {
   transactionCron,
