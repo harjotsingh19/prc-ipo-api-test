@@ -6,6 +6,8 @@ const { auth, isAdmin } = require("../middleware/auth");
 const adminValidator = require("../utils/validators/admin");
 const saleValidator = require("../utils/validators/sale");
 
+const webHookController = require("../controllers/saleController");
+
 router.get(
   "/",
   auth,

@@ -18,6 +18,7 @@ const auth = (req, res, next) => {
       let accesstoken = token.split(" ");
       let decoded = jwt.verify(accesstoken[1], config.accessTokenSecret);
       req.data = decoded;
+      console.log("🚀 ~ decoded:", decoded);
       next();
     }
   } catch (err) {

@@ -12,175 +12,352 @@ const {
 const { default: mongoose } = require("mongoose");
 const Transaction = require("../models/Transaction");
 const PrivateAddress = require("../models/PrivateAddress");
-// const Kyc = require("../models/Kyc");
-// const BlacklistAddress = require("../models/BlacklistAddress");
 const tokenVesting = require("../models/tokenVesting");
-// const  { rvaContract, verifyKyc, vestingContract } = require('../utils/blockchainManager');
+
 const TokenClaimHistory = require("../models/TokenClaimHistory");
 const { generatePDF } = require("../utils/pdfManager");
 const moment = require("moment");
 const { sendEmail } = require("../utils/mailManager");
 
-const setAdminAddress = async (req, res) => {
-  try {
-    console.log("in setadminaddress api");
-    const adminCheck = await isAdmin(req.data.role);
-    const { walletAddress } = req.body;
+// const getInvestors = async (req, res) => {
+//   try {
+//     const { page } = req.query;
+//     const pageSize = parseInt(req.query.pageSize);
+//     const skip = (page - 1) * pageSize;
 
-    if (!adminCheck) {
-      return httpResponse(
-        res,
-        statusCode.badRequest,
-        false,
-        message.userIsNotAdmin
-      );
-    }
+//     let condition = { role: "INVESTOR" };
+//     if (req.query.investorId) {
+//       condition = {
+//         role: "INVESTOR",
+//         _id: new mongoose.Types.ObjectId(`${req.query.investorId}`),
+//       };
+//     }
 
-    const admin = await User.findById({
-      _id: new mongoose.Types.ObjectId(req.data.id),
-    });
+//     const aggregatePipeline = [
+//       {
+//         $match: condition,
+//       },
+//       {
+//         $addFields: {
+//           userWalletAddress: { $toLower: "$walletAddress" },
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "transactions",
+//           let: { investorWalletAddress: "$userWalletAddress" },
+//           pipeline: [
+//             {
+//               $match: {
+//                 $expr: {
+//                   $eq: [{ $toLower: "$from" }, "$$investorWalletAddress"],
+//                 },
+//               },
+//             },
+//           ],
+//           as: "transactions",
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "transactions",
+//           let: { investorWalletAddress: "$userWalletAddress" },
+//           pipeline: [
+//             {
+//               $match: {
+//                 $expr: {
+//                   $eq: [{ $toLower: "$from" }, "$$investorWalletAddress"],
+//                 },
+//               },
+//             },
+//             {
+//               $group: {
+//                 _id: "$asset", // Group by asset
+//                 totalAssetAmount: { $sum: "$assetAmount" }, // Sum the assetAmount for each asset
+//               },
+//             },
+//             {
+//               $project: {
+//                 asset: "$_id",
+//                 totalAssetAmount: 1,
+//                 _id: 0,
+//               },
+//             },
+//           ],
+//           as: "groupedByAssets",
+//         },
+//       },
+//       {
+//         $addFields: {
+//           groupedByAsset: {
+//             $arrayToObject: {
+//               $map: {
+//                 input: "$groupedByAssets",
+//                 as: "summary",
+//                 in: { k: "$$summary.asset", v: "$$summary.totalAssetAmount" },
+//               },
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $addFields: {
+//           totalTokensBought: {
+//             $sum: "$transactions.tokenAmount",
+//           },
+//           totalUSDValue: {
+//             $sum: "$transactions.value",
+//           },
+//         },
+//       },
+//       {
+//         $sort: { created_at: -1 },
+//       },
+//       {
+//         $project: {
+//           name: 1,
+//           onchainId: 1,
+//           walletAddress: 1,
+//           totalTokensBought: 1,
+//           totalUSDValue: 1,
+//           groupedByAsset: 1,
+//           "transactions.txnHash": 1,
+//           "transactions.value": 1,
+//           "transactions.tokenAmount": 1,
+//           "transactions.tokenPrice": 1,
+//           "transactions.saleId": 1,
+//           "transactions.created_at": 1,
+//           "transactions.assetAmount": 1,
+//           "transactions.asset": 1,
+//         },
+//       },
+//     ];
 
-    if (admin.walletAddress != "") {
-      return httpResponse(
-        res,
-        statusCode.badRequest,
-        false,
-        message.adminAddressIsAlreadySet
-      );
-    }
+//     if (!req.query.investorId) {
+//       aggregatePipeline.push({
+//         $facet: {
+//           metadata: [
+//             { $count: "totalCount" }, // Calculate total count of matching documents
+//           ],
+//           data: [
+//             { $skip: skip }, // Paginate results
+//             { $limit: pageSize }, // Limit results per page
+//           ],
+//         },
+//       });
+//       aggregatePipeline.push({
+//         $addFields: {
+//           totalCount: { $arrayElemAt: ["$metadata.totalCount", 0] }, // Extract totalCount from metadata
+//         },
+//       });
+//     }
 
-    admin.walletAddress = walletAddress;
-    admin.save();
+//     const investors = await User.aggregate(aggregatePipeline);
 
-    return httpResponse(res, statusCode.ok, true, message.adminAddressSet);
-  } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
-  }
-};
+//     const paginatedData =
+//       req.query.investorId && investors.length
+//         ? investors
+//         : investors[0]?.data || [];
+//     const totalCount =
+//       req.query.investorId && investors.length
+//         ? 1
+//         : investors[0]?.totalCount || 0;
+
+//     const responseData = {
+//       page,
+//       pageSize,
+//       totalCount,
+//       investors: paginatedData,
+//     };
+
+//     return httpResponse(
+//       res,
+//       statusCode.ok,
+//       true,
+//       message.allInvestorsReturned,
+//       responseData
+//     );
+//   } catch (error) {
+//     return httpResponse(res, statusCode.errorPage, false, error.message);
+//   }
+// };
+
+// const getAllInvestments = async (req, res) => {
+
+//   try {
+//     const { filter, page, saleId } = req.query;
+
+//     let pipeline = [
+//       {
+//         $lookup: {
+//           from: "sales",
+//           localField: "saleId",
+//           foreignField: "_id",
+//           as: "saleDetails",
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$saleDetails",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       { $sort: { created_at: -1 } },
+//       {
+//         $project: {
+//           txnHash: 1,
+//           from: 1,
+//           value: 1,
+//           tokenAmount: 1,
+//           tokenPrice: 1,
+//           saleId: 1,
+//           asset: 1,
+//           assetAmount: 1,
+//           created_at: 1,
+//           saleDetails: 1,
+//         },
+//       },
+//     ];
+
+//     if (saleId) {
+//       pipeline.push({
+//         $match: { saleId: new mongoose.Types.ObjectId(saleId) },
+//       });
+//     }
+
+//     if (filter === "last10") {
+//       pipeline.push({ $sort: { created_at: -1 } }, { $limit: 10 });
+//     } else if (filter === "top10") {
+//       pipeline.push({ $sort: { tokenAmount: -1 } }, { $limit: 10 });
+//     } else if (page && req.query.pageSize) {
+//       const pageSize = parseInt(req.query.pageSize);
+//       const skip = (page - 1) * pageSize;
+//       pipeline.push({
+//         $facet: {
+//           metadata: [{ $count: "totalCount" }],
+//           data: [{ $skip: skip }, { $limit: pageSize }],
+//         },
+//       });
+//       pipeline.push({
+//         $addFields: {
+//           totalCount: { $arrayElemAt: ["$metadata.totalCount", 0] },
+//         },
+//       });
+
+//       const investments = await Transaction.aggregate(pipeline);
+//       const paginatedData = investments[0]?.data || [];
+//       const totalCount = investments[0]?.totalCount || 0;
+
+//       const responseData = {
+//         page,
+//         pageSize,
+//         totalCount,
+//         investments: paginatedData,
+//       };
+//       return httpResponse(
+//         res,
+//         statusCode.ok,
+//         true,
+//         message.allInvestmentsReturned,
+//         responseData
+//       );
+//     }
+
+//     const investments = await Transaction.aggregate(pipeline);
+
+//     return httpResponse(
+//       res,
+//       statusCode.ok,
+//       true,
+//       message.allInvestmentsReturned,
+//       investments
+//     );
+//   } catch (error) {
+//     return httpResponse(res, statusCode.errorPage, false, error.message);
+//   }
+// };
 
 const getInvestors = async (req, res) => {
   try {
-    const { page } = req.query;
-    const pageSize = parseInt(req.query.pageSize);
-    const skip = (page - 1) * pageSize;
+    const { page = 1, pageSize = 10, investorId } = req.query; // Extract query parameters
+    console.log("🚀 ~ getInvestors ~ investorId:", investorId);
+    const skip = (page - 1) * pageSize; // Calculate the number of documents to skip for pagination
 
+    // Define the base condition to filter only investors
     let condition = { role: "INVESTOR" };
-    if (req.query.investorId) {
+
+    // If an investorId is provided, filter by that specific investor
+    if (investorId) {
       condition = {
         role: "INVESTOR",
-        _id: new mongoose.Types.ObjectId(req.query.investorId),
+        _id: new mongoose.Types.ObjectId(`${req.query.investorId}`),
       };
     }
 
     const aggregatePipeline = [
       {
-        $match: condition,
-      },
-      {
-        $addFields: {
-          userWalletAddress: { $toLower: "$walletAddress" },
-        },
+        $match: condition, // Match investors based on the condition
       },
       {
         $lookup: {
-          from: "transactions",
-          let: { investorWalletAddress: "$userWalletAddress" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: [{ $toLower: "$from" }, "$$investorWalletAddress"],
-                },
-              },
-            },
-          ],
-          as: "transactions",
-        },
-      },
-      {
-        $lookup: {
-          from: "transactions",
-          let: { investorWalletAddress: "$userWalletAddress" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: [{ $toLower: "$from" }, "$$investorWalletAddress"],
-                },
-              },
-            },
-            {
-              $group: {
-                _id: "$asset", // Group by asset
-                totalAssetAmount: { $sum: "$assetAmount" }, // Sum the assetAmount for each asset
-              },
-            },
-            {
-              $project: {
-                asset: "$_id",
-                totalAssetAmount: 1,
-                _id: 0,
-              },
-            },
-          ],
-          as: "groupedByAssets",
+          from: "transactions", // Join with the Transaction collection
+          localField: "_id", // Field in the User collection
+          foreignField: "userId", // Field in the Transaction collection
+          as: "transactions", // Alias for the joined data
         },
       },
       {
         $addFields: {
-          groupedByAsset: {
-            $arrayToObject: {
+          tokenIn: {
+            $sum: {
               $map: {
-                input: "$groupedByAssets",
-                as: "summary",
-                in: { k: "$$summary.asset", v: "$$summary.totalAssetAmount" },
+                input: "$transactions.tokenIn", // Map over tokenIn values
+                as: "token",
+                in: { $toDouble: "$$token" }, // Convert tokenIn to a numeric value
+              },
+            },
+          },
+          tokenOut: {
+            $sum: {
+              $map: {
+                input: "$transactions.tokenOut", // Map over tokenOut values
+                as: "usd",
+                in: { $toDouble: "$$usd" }, // Convert tokenOut to a numeric value
               },
             },
           },
         },
       },
       {
-        $addFields: {
-          totalTokensBought: {
-            $sum: "$transactions.tokenAmount",
-          },
-          totalUSDValue: {
-            $sum: "$transactions.value",
-          },
-        },
-      },
-      {
-        $sort: { created_at: -1 },
+        $sort: { created_at: -1 }, // Sort by creation date in descending order
       },
       {
         $project: {
-          name: 1,
-          onchainId: 1,
+          firstName: 1,
+          lastName: 1,
+          email: 1,
           walletAddress: 1,
-          totalTokensBought: 1,
-          totalUSDValue: 1,
-          groupedByAsset: 1,
-          "transactions.txnHash": 1,
-          "transactions.value": 1,
-          "transactions.tokenAmount": 1,
-          "transactions.tokenPrice": 1,
-          "transactions.saleId": 1,
-          "transactions.created_at": 1,
-          "transactions.assetAmount": 1,
-          "transactions.asset": 1,
+          tokenIn: 1,
+          tokenOut: 1,
+          "transactions.paymentId": 1,
+          "transactions.tokenIn": 1,
+          "transactions.tokenOut": 1,
+          "transactions.paymentStatus": 1,
+          "transactions.transactionDate": 1,
         },
       },
     ];
 
-    if (!req.query.investorId) {
+    // If no specific investorId is provided, apply pagination
+    if (!investorId) {
       aggregatePipeline.push({
         $facet: {
           metadata: [
-            { $count: "totalCount" }, // Calculate total count of matching documents
+            { $count: "totalCount" }, // Count the total number of matching documents
           ],
           data: [
-            { $skip: skip }, // Paginate results
-            { $limit: pageSize }, // Limit results per page
+            { $skip: skip }, // Skip documents for pagination
+            { $limit: parseInt(pageSize) }, // Limit the number of documents per page
           ],
         },
       });
@@ -191,24 +368,23 @@ const getInvestors = async (req, res) => {
       });
     }
 
-    const investors = await User.aggregate(aggregatePipeline);
+    // Execute the aggregation pipeline
+    const investors = await User.aggregate(aggregatePipeline).exec();
 
+    // Prepare the response data
     const paginatedData =
-      req.query.investorId && investors.length
-        ? investors
-        : investors[0]?.data || [];
+      investorId && investors.length ? investors : investors[0]?.data || [];
     const totalCount =
-      req.query.investorId && investors.length
-        ? 1
-        : investors[0]?.totalCount || 0;
+      investorId && investors.length ? 1 : investors[0]?.totalCount || 0;
 
     const responseData = {
-      page,
-      pageSize,
+      page: parseInt(page),
+      pageSize: parseInt(pageSize),
       totalCount,
       investors: paginatedData,
     };
 
+    // Send the response
     return httpResponse(
       res,
       statusCode.ok,
@@ -217,15 +393,14 @@ const getInvestors = async (req, res) => {
       responseData
     );
   } catch (error) {
+    // Handle any errors that occur during execution
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
-
 const getAllInvestments = async (req, res) => {
   try {
     const { filter, page, saleId } = req.query;
-
-    let pipeline = [
+    const pipeline = [
       {
         $lookup: {
           from: "sales",
@@ -240,33 +415,52 @@ const getAllInvestments = async (req, res) => {
           preserveNullAndEmptyArrays: true,
         },
       },
-      { $sort: { created_at: -1 } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$userDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $sort: { created_at: -1 },
+      },
       {
         $project: {
-          txnHash: 1,
-          from: 1,
-          value: 1,
-          tokenAmount: 1,
-          tokenPrice: 1,
+          paymentIntentId: 1,
+          tokenIn: 1,
+          tokenOut: 1,
+          paymentStatus: 1,
+          paymentType: 1,
+          transactionDate: 1,
           saleId: 1,
-          asset: 1,
-          assetAmount: 1,
-          created_at: 1,
-          saleDetails: 1,
+          "saleDetails.name": 1,
+          "saleDetails.startTime": 1,
+          "saleDetails.endTime": 1,
+          "userDetails.firstName": 1,
+          "userDetails.lastName": 1,
+          "userDetails.email": 1,
         },
       },
     ];
 
     if (saleId) {
       pipeline.push({
-        $match: { saleId: new mongoose.Types.ObjectId(saleId) },
+        $match: { saleId: new mongoose.Types.ObjectId(`${saleId}`) },
       });
     }
 
     if (filter === "last10") {
-      pipeline.push({ $sort: { created_at: -1 } }, { $limit: 10 });
+      pipeline.push({ $sort: { transactionDate: 1 } }, { $limit: 10 });
     } else if (filter === "top10") {
-      pipeline.push({ $sort: { tokenAmount: -1 } }, { $limit: 10 });
+      pipeline.push({ $sort: { transactionDate: -1 } }, { $limit: 10 });
     } else if (page && req.query.pageSize) {
       const pageSize = parseInt(req.query.pageSize);
       const skip = (page - 1) * pageSize;
@@ -282,7 +476,7 @@ const getAllInvestments = async (req, res) => {
         },
       });
 
-      const investments = await Transaction.aggregate(pipeline);
+      const investments = await Transaction.aggregate(pipeline).exec();
       const paginatedData = investments[0]?.data || [];
       const totalCount = investments[0]?.totalCount || 0;
 
@@ -301,14 +495,106 @@ const getAllInvestments = async (req, res) => {
       );
     }
 
-    const investments = await Transaction.aggregate(pipeline);
-
+    const investments = await Transaction.aggregate(pipeline).exec();
     return httpResponse(
       res,
       statusCode.ok,
       true,
       message.allInvestmentsReturned,
       investments
+    );
+  } catch (error) {
+    return httpResponse(res, statusCode.errorPage, false, error.message);
+  }
+};
+const getInvestmentDetails = async (req, res) => {
+  try {
+    const { id } = req.params; // Extract transaction ID from request parameters
+    const transactionId = id; // Assign the transaction ID
+
+    if (!transactionId) {
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.transactionIdRequired
+      );
+    }
+
+    // Aggregation pipeline to fetch transaction details
+    const transactionDetails = await Transaction.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(`${transactionId}`), // Match the transaction ID
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$userDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "sales", // Join with the Sale collection
+          localField: "saleId",
+          foreignField: "_id",
+          as: "saleDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$saleDetails", // Unwind the saleDetails array
+          preserveNullAndEmptyArrays: true, // Keep documents even if saleDetails is null
+        },
+      },
+      {
+        $project: {
+          paymentIntentId: 1,
+          tokenIn: 1,
+          tokenOut: 1,
+          paymentStatus: 1,
+          paymentType: 1,
+          transactionDate: 1,
+          "userDetails.firstName": 1,
+          "userDetails.lastName": 1,
+          "userDetails.email": 1,
+          "saleDetails.name": 1,
+          "saleDetails.startTime": 1,
+          "saleDetails.endTime": 1,
+        },
+      },
+    ]).exec();
+
+    if (!transactionDetails.length) {
+      return httpResponse(
+        res,
+        statusCode.notFound,
+        false,
+        message.transactionNotFound
+      );
+    }
+
+    console.log(
+      "🚀 ~ getInvestmentDetails ~ transactionDetails:",
+      transactionDetails
+    );
+
+    // Return the transaction details
+    return httpResponse(
+      res,
+      statusCode.ok,
+      true,
+      message.transactionDetailsFetched,
+      transactionDetails[0]
     );
   } catch (error) {
     return httpResponse(res, statusCode.errorPage, false, error.message);
@@ -336,7 +622,7 @@ const createSaleOld = async (req, res) => {
       blockHash,
       txnIndex,
     } = req.body;
-    const saleExists = await Sale.findOne({ saleId });
+    const saleExists = await Sale.findOne({ saleId }).exec();
     if (saleExists) {
       return httpResponse(
         res,
@@ -346,7 +632,7 @@ const createSaleOld = async (req, res) => {
         null
       );
     }
-    await Sale.updateMany({ active: true }, { active: false });
+    await Sale.updateMany({ active: true }, { active: false }).exec();
     const sale = await Sale.create({
       saleId,
       startTime,
@@ -379,7 +665,7 @@ const createSale = async (req, res) => {
 
     const normalizedName = name.trim().toLowerCase();
 
-    const existingSale = await Sale.findOne({ name: normalizedName });
+    const existingSale = await Sale.findOne({ name: normalizedName }).exec();
     if (existingSale) {
       return httpResponse(
         res,
@@ -482,7 +768,7 @@ const getSalesOld = async (req, res) => {
       },
     ];
 
-    const sales = await Sale.aggregate(pipeline);
+    const sales = await Sale.aggregate(pipeline).exec();
     const paginatedData = sales[0]?.data || [];
     const totalCount = sales[0]?.totalCount || 0;
 
@@ -512,12 +798,15 @@ const getSales = async (req, res) => {
     const skip = (page - 1) * pageSize;
     const sort = { createdAt: -1 };
 
-    const {
+    let {
       search: filterString,
       status: filterStatus,
       fromDate,
       toDate,
     } = req.query;
+
+    filterStatus = filterStatus === "true";
+
     const dateFilterColumn = "endTime";
     let whereClause = {};
 
@@ -534,12 +823,16 @@ const getSales = async (req, res) => {
       };
       whereClause = addFiltersToWhereClause(filters);
     }
+
+    console.log("filterStatus: ", filterStatus, typeof filterStatus);
+
     const sales = await Sale.find(whereClause)
       .sort(sort)
       .skip(skip)
-      .limit(pageSize);
+      .limit(pageSize)
+      .exec();
     console.log("whereClause: ", whereClause);
-    const totalCount = await Sale.countDocuments(whereClause);
+    const totalCount = await Sale.countDocuments(whereClause).exec();
 
     const responseData = {
       page,
@@ -547,6 +840,16 @@ const getSales = async (req, res) => {
       totalCount,
       sales,
     };
+
+    if (filterStatus === true) {
+      return httpResponse(
+        res,
+        statusCode.ok,
+        true,
+        message.SaleDataReturned,
+        responseData
+      );
+    }
     return httpResponse(
       res,
       statusCode.ok,
@@ -563,7 +866,7 @@ const getSales = async (req, res) => {
 const getSale = async (req, res) => {
   try {
     const { id } = req.params;
-    const sales = await Sale.findById(id);
+    const sales = await Sale.findById(id).exec();
     if (sales) {
       return httpResponse(
         res,
@@ -583,7 +886,7 @@ const getSale = async (req, res) => {
 
 const getTokenDetails = async (req, res) => {
   try {
-    const token = await Token.findOne({});
+    const token = await Token.findOne({}).exec();
     return httpResponse(
       res,
       statusCode.ok,
@@ -606,194 +909,6 @@ const createToken = async (req, res) => {
   }
 };
 
-const getInvestorKyc = async (req, res) => {
-  try {
-    const { page, status } = req.query;
-    const pageSize = parseInt(req.query.pageSize);
-    const skip = (page - 1) * pageSize;
-
-    let investorCondition = { role: "INVESTOR" };
-    if (req.query.investorId) {
-      investorCondition = {
-        role: "INVESTOR",
-        _id: new mongoose.Types.ObjectId(req.query.investorId),
-      };
-    }
-
-    if (status) {
-      if (status == userStatus.KYC_SUCCESS) {
-        investorCondition.isKycVerified = true;
-      } else if (status == userStatus.KYC_REJECTED) {
-        investorCondition.isKycRejected = true;
-      } else {
-        investorCondition.status = status;
-      }
-    }
-
-    const kycData = await User.aggregate([
-      {
-        $match: investorCondition,
-      },
-      {
-        $addFields: {
-          investorWalletAddress: { $toLower: "$walletAddress" },
-        },
-      },
-      {
-        $lookup: {
-          from: "privateaddresses",
-          let: { investorWalletAddress: "$investorWalletAddress" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: [
-                    { $toLower: "$walletAddress" },
-                    "$$investorWalletAddress",
-                  ],
-                },
-              },
-            },
-          ],
-          as: "isWhitelisted",
-        },
-      },
-      {
-        $lookup: {
-          from: "blacklistaddresses",
-          let: { userWallet: "$investorWalletAddress" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: [{ $toLower: "$walletAddress" }, "$$userWallet"],
-                },
-              },
-            },
-          ],
-          as: "isBlacklisted",
-        },
-      },
-      {
-        $match: {
-          $expr: {
-            $and: [
-              { $eq: [{ $size: "$isWhitelisted" }, 0] },
-              { $eq: [{ $size: "$isBlacklisted" }, 0] },
-            ],
-          },
-        },
-      },
-      {
-        $lookup: {
-          from: "kycs",
-          let: { userId: "$_id" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: ["$userId", "$$userId"],
-                },
-              },
-            },
-            {
-              $sort: { createdAt: -1 },
-            },
-          ],
-          as: "kyc",
-        },
-      },
-      {
-        $addFields: {
-          isDocUploaded: {
-            $cond: [{ $gt: [{ $size: "$kyc" }, 0] }, true, false],
-          },
-          latestKyc: {
-            $ifNull: [
-              {
-                $arrayElemAt: [
-                  {
-                    $filter: {
-                      input: "$kyc",
-                      as: "k",
-                      cond: { $eq: ["$$k.isLatest", true] },
-                    },
-                  },
-                  0,
-                ],
-              },
-              { createdAt: new Date(0) }, // Default value if no KYC data exists
-            ],
-          },
-        },
-      },
-      {
-        $sort: { "latestKyc.createdAt": -1 },
-      },
-      {
-        $project: {
-          _id: 1,
-          name: 1,
-          email: 1,
-          walletAddress: 1,
-          status: 1,
-          isKycVerified: 1,
-          isKycRejected: 1,
-          isDocUploaded: 1,
-          sumsubApplicantId: 1,
-          onchainId: 1,
-          kyc: 1,
-        },
-      },
-      {
-        $facet: {
-          metadata: [
-            { $count: "totalCount" }, // Calculate total count of matching documents
-          ],
-          data: [
-            { $skip: skip }, // Paginate results
-            { $limit: pageSize }, // Limit results per page
-          ],
-        },
-      },
-      {
-        $addFields: {
-          totalCount: { $arrayElemAt: ["$metadata.totalCount", 0] }, // Extract totalCount from metadata
-        },
-      },
-    ]);
-
-    console.log("🚀 ~ getInvestorKyc ~ kycData:", kycData);
-    const paginatedData = kycData[0]?.data || [];
-    const totalCount = kycData[0]?.totalCount || 0;
-
-    const responseData = {
-      page,
-      pageSize,
-      totalCount,
-      kycData: paginatedData,
-    };
-    if (paginatedData.length) {
-      return httpResponse(
-        res,
-        statusCode.ok,
-        true,
-        message.kycDataReturned,
-        responseData
-      );
-    }
-    return httpResponse(
-      res,
-      statusCode.ok,
-      false,
-      message.noRecordFound,
-      responseData
-    );
-  } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
-  }
-};
-
 const getAllAddressWhitelist = async (req, res) => {
   try {
     const { page } = req.query;
@@ -803,8 +918,9 @@ const getAllAddressWhitelist = async (req, res) => {
     const whitelistAddressList = await PrivateAddress.find()
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(pageSize);
-    const totalCount = await PrivateAddress.countDocuments();
+      .limit(pageSize)
+      .exec();
+    const totalCount = await PrivateAddress.countDocuments().exec();
     const responseData = {
       page,
       pageSize,
@@ -888,7 +1004,7 @@ const getOneInvestorAllInvestments = async (req, res) => {
 
     const investor = await User.findOne({
       walletAddress: { $regex: `^${walletAddress}$`, $options: "i" },
-    });
+    }).exec();
     if (!investor) {
       return httpResponse(
         res,
@@ -906,7 +1022,7 @@ const getOneInvestorAllInvestments = async (req, res) => {
         $regex: `^${investorDetails.walletAddress}$`,
         $options: "i",
       },
-    });
+    }).exec();
     const isUserBlacklisted = await BlacklistAddress.findOne({
       walletAddress: {
         $regex: `^${investorDetails.walletAddress}$`,
@@ -955,7 +1071,9 @@ const getOneInvestorAllInvestments = async (req, res) => {
       },
     ];
 
-    const investorInvestments = await Transaction.aggregate(aggregatePipeline);
+    const investorInvestments = await Transaction.aggregate(
+      aggregatePipeline
+    ).exec();
 
     const paginatedData = investorInvestments[0]?.data || [];
     const totalCount = investorInvestments[0]?.totalCount || 0;
@@ -1055,7 +1173,7 @@ const getSaleStatistics = async (req, res) => {
       },
     ];
 
-    const saleStatistics = await Sale.aggregate(aggregatePipeline);
+    const saleStatistics = await Sale.aggregate(aggregatePipeline).exec();
     const paginatedData = saleStatistics[0]?.data || [];
     const totalCount = saleStatistics[0]?.totalCount || 0;
 
@@ -1088,8 +1206,8 @@ const getSaleStatistics = async (req, res) => {
 
 const getUserAnalytics = async (req, res) => {
   try {
-    const userId = new mongoose.Types.ObjectId(req.params.userId);
-    const user = await User.findById(userId);
+    const userId = new mongoose.Types.ObjectId(`${req.params.userId}`);
+    const user = await User.findById(userId).exec();
     const condition = { role: "INVESTOR", _id: userId };
     if (!user) {
       return httpResponse(
@@ -1182,7 +1300,7 @@ const getUserAnalytics = async (req, res) => {
       },
     ];
 
-    const userAnalytics = await User.aggregate(aggregatePipeline);
+    const userAnalytics = await User.aggregate(aggregatePipeline).exec();
     const responseData = {
       groupedByTotalAssetAmount: {},
       totalTokensBought: 0,
@@ -1236,10 +1354,13 @@ const getUserAnalytics = async (req, res) => {
 
 const dashboard = async (req, res) => {
   try {
-    const totalInvestors = await User.countDocuments({ role: "INVESTOR" });
+    const totalInvestors = await User.countDocuments({
+      role: "INVESTOR",
+    }).exec();
     const recentTransactions = await Transaction.find()
       .sort({ created_at: -1 })
-      .limit(10);
+      .limit(10)
+      .exec();
     const saleCount = Number(await rvaContract.methods.saleCount().call());
     const distributionAnalytics = {
       totalClaimedTokens: 0,
@@ -1258,7 +1379,7 @@ const dashboard = async (req, res) => {
           investorAddress: "$_id",
         },
       },
-    ]);
+    ]).exec();
 
     let totalFundRaised = BigInt(0);
     for (let i = 1; i <= saleCount; i++) {
@@ -1301,7 +1422,7 @@ const getDistributionAnalytics = async (req, res) => {
     const tokenAnalytics = await Transaction.aggregate([
       {
         $match: {
-          saleId: new mongoose.Types.ObjectId(saleId),
+          saleId: new mongoose.Types.ObjectId(`${saleId}`),
         },
       },
       {
@@ -1328,7 +1449,7 @@ const getDistributionAnalytics = async (req, res) => {
           totalLockedTokens: { $sum: "$tokenVestingsDetails.lockedTokens" },
         },
       },
-    ]);
+    ]).exec();
     const responseData = {
       totalClaimedTokens: 0,
       totalUnclaimedTokens: 0,
@@ -1364,8 +1485,8 @@ const getDistributionAnalytics = async (req, res) => {
 const updateInvestorKycStatus = async (req, res) => {
   try {
     const { status, reason } = req.body;
-    const investorId = new mongoose.Types.ObjectId(req.params.id);
-    const investor = await User.findById(investorId);
+    const investorId = new mongoose.Types.ObjectId(`${req.params.userId}`);
+    const investor = await User.findById(investorId).exec();
     const statusHistory = {
       status: investor.status,
       timestamp: Date.now(),
@@ -1386,7 +1507,7 @@ const updateInvestorKycStatus = async (req, res) => {
             $regex: `^${investor.walletAddress}$`,
             $options: "i",
           },
-        });
+        }).exec();
         await BlacklistAddress.deleteOne({
           walletAddress: {
             $regex: `^${investor.walletAddress}$`,
@@ -1420,7 +1541,7 @@ const updateInvestorKycStatus = async (req, res) => {
         $push: { statusHistory: statusHistory },
         $set: { status, isKycVerified, isKycRejected },
       }
-    );
+    ).exec();
     await Kyc.updateMany(
       { userId: investorId, isLatest: true },
       { isKycVerified, rejectionReason, reviewStatus, lastUpdated: new Date() }
@@ -1433,7 +1554,7 @@ const updateInvestorKycStatus = async (req, res) => {
 
 const updateInvestorOnchainId = async (req, res) => {
   try {
-    const investorId = new mongoose.Types.ObjectId(req.params.userId);
+    const investorId = new mongoose.Types.ObjectId(`${req.params.userId}`);
     const investor = await User.findById(investorId);
     if (!investor) {
       return httpResponse(
@@ -1456,7 +1577,7 @@ const updateInvestorOnchainId = async (req, res) => {
     const { onchainId } = req.body;
     await User.findByIdAndUpdate(investorId, {
       onchainId,
-    });
+    }).exec();
     return httpResponse(res, statusCode.ok, true, message.onchainIdUpdated, {});
   } catch (error) {
     return httpResponse(res, statusCode.errorPage, false, error.message);
@@ -1475,8 +1596,9 @@ const getClaimTokenHistory = async (req, res) => {
     const claimTokenHistory = await TokenClaimHistory.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(pageSize);
-    const totalCount = await TokenClaimHistory.countDocuments();
+      .limit(pageSize)
+      .exec();
+    const totalCount = TokenClaimHistory.countDocuments();
     const responseData = {
       page,
       pageSize,
@@ -1539,7 +1661,7 @@ const downloadInvestments = async (req, res) => {
         },
       },
     ];
-    const transactions = await Transaction.aggregate(investmentPipeline);
+    const transactions = await Transaction.aggregate(investmentPipeline).exec();
     const headers = [
       "Tx Hash",
       "Tokens Bought With",
@@ -1577,24 +1699,23 @@ const downloadInvestments = async (req, res) => {
 };
 
 module.exports = {
-  setAdminAddress,
   getInvestors,
   getAllInvestments,
+  getInvestmentDetails,
   createSale,
   getSales,
   getSale,
-  getTokenDetails,
-  createToken,
-  getInvestorKyc,
-  getAllAddressWhitelist,
-  getOneInvestorAllInvestments,
-  getSaleStatistics,
-  getUserAnalytics,
-  dashboard,
-  getDistributionAnalytics,
-  updateInvestorKycStatus,
-  getAllAddressBlacklist,
-  updateInvestorOnchainId,
-  getClaimTokenHistory,
-  downloadInvestments,
+  // getTokenDetails,
+  // createToken,
+  // getAllAddressWhitelist,
+  // getOneInvestorAllInvestments,
+  // getSaleStatistics,
+  // getUserAnalytics,
+  // dashboard,
+  // getDistributionAnalytics,
+  // updateInvestorKycStatus,
+  // getAllAddressBlacklist,
+  // updateInvestorOnchainId,
+  // getClaimTokenHistory,
+  // downloadInvestments,
 };

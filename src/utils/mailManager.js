@@ -19,6 +19,8 @@ exports.sendEmail = async (recipient, templateId, template_data) => {
     const response = await sendGridMail.send(emailBody);
     return response;
   } catch (e) {
+    console.log("🚀 ~ exports.sendEmail= ~ e:", e.response.body);
+
     return e;
   }
 };

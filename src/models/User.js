@@ -33,10 +33,8 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    // onchainId: {
-    //   type: String,
-    //   default: "",
-    // },
+    tokenBalance: { type: Number, default: 0 },
+
     walletAddress: {
       type: String,
       default: "",
@@ -106,6 +104,10 @@ const userSchema = new mongoose.Schema(
     // },
     customerStripeId: {
       type: String,
+    },
+    tokenBalance: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }

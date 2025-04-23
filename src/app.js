@@ -9,7 +9,6 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
 const { swaggerDefinition } = require("./utils/swagger.js");
 require("./db/mongoose");
-require("./utils/socketManager");
 const swaggerSpec = swaggerJsDoc(swaggerDefinition);
 const {
   transactionCron,
@@ -63,14 +62,6 @@ app.use(
 // Enable access uploads file from frontend
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
-// // Run cron jobs
-// createSaleCron();
-// saleFinalizeCron();
-// transactionCron();
-// icoFinalizedCron();
-// userStatusUpdateCron();
-// claimTokenCron();
-
 app.listen(config.port, () => {
-  console.log(`Server running on port ${config.port}`);
+  console.log(`Serverrr running on port ${config.port}`);
 });
