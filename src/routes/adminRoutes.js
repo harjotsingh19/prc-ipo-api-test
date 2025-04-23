@@ -3,7 +3,6 @@ const router = express.Router();
 const adminController = require("../controllers/adminController");
 const { auth, isAdmin } = require("../middleware/auth");
 const adminValidator = require("../utils/validators/admin");
-const { isAmin } = require("../utils/helper");
 
 router.get(
   "/investors",
@@ -57,7 +56,7 @@ router.get(
   adminController.getSaleStatistics
 );
 router.get("/user-analytics/:userId", auth, adminController.getUserAnalytics);
-router.get("/dashboard", auth, adminController.dashboard);
+router.get("/dashboard", auth, isAdmin, adminController.dashboard);
 router.get(
   "/distribution-analytics/:saleId",
   auth,

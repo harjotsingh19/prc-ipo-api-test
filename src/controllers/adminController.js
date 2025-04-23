@@ -1240,43 +1240,21 @@ const dashboard = async (req, res) => {
     const recentTransactions = await Transaction.find()
       .sort({ created_at: -1 })
       .limit(10);
-    const saleCount = Number(await rvaContract.methods.saleCount().call());
+
     const distributionAnalytics = {
       totalClaimedTokens: 0,
-      totalUnclaimedTokens: 0,
-      totalTokens: 0,
+      // totalUnclaimedTokens: 0,
+      // totalTokens: 0,
     };
-    const investors = await Transaction.aggregate([
-      {
-        $group: {
-          _id: "$from",
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          investorAddress: "$_id",
-        },
-      },
-    ]);
-
     let totalFundRaised = BigInt(0);
-    for (let i = 1; i <= saleCount; i++) {
-      const sale = await rvaContract.methods.sales(i).call();
-      totalFundRaised += BigInt(sale[7]);
-      for (const investor of investors) {
-        const vestingData = await vestingContract.methods
-          .getVestingDetails(i, investor.investorAddress)
-          .call();
-        distributionAnalytics.totalClaimedTokens += Number(
-          vestingData._claimedAmount
-        );
-        distributionAnalytics.totalTokens += Number(vestingData._totalAmount);
-      }
+    const token = await Token.findOne();
+    if (token) {
+      totalFundRaised = token?.fundsRaised;
+      // distributionAnalytics.totalTokens = token?.totalSupply;
+      distributionAnalytics.totalClaimedTokens = token?.claimedTokens;
+      // distributionAnalytics.totalUnclaimedTokens = token?.availableTokens;
     }
-    distributionAnalytics.totalUnclaimedTokens =
-      distributionAnalytics.totalTokens -
-      distributionAnalytics.totalClaimedTokens;
+
     const responseData = {
       totalInvestors,
       totalFundRaised: totalFundRaised.toString(),
