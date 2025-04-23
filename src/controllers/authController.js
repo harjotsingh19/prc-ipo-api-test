@@ -5,6 +5,7 @@ const User = require("../models/User");
 const Otp = require("../models/Otp");
 const RefreshTokens = require("../models/refreshToken");
 const { generateOTP } = require("../utils/helper");
+const { createCustomer } = require("../utils/stripeMethods");
 const { jwtSign } = require("../utils/jwt");
 const { httpResponse } = require("../middleware/responseHandler");
 const {
@@ -41,16 +42,28 @@ const registerInvestor = async (req, res) => {
       timestamp: Date.now(),
       reason: "",
     };
+    const userEmail = email.toLowerCase();
+    const customerData = await createCustomer(userEmail);
+    if (!customerData.isSuccess) {
+      return httpResponse(
+        res,
+        statusCode.errorPage,
+        false,
+        message.userNotCreatedOnStripe,
+        null
+      );
+    }
 
     const user = await User.create({
       firstName,
       lastName,
-      email: email.toLowerCase(),
+      email: userEmail,
       password: hashedPassword,
       role,
       isActive: true,
       status: status.NEW,
       statusHistory: statusHistory,
+      customerStripeId: customerData.customerId,
     });
 
     if (user) {
@@ -196,6 +209,7 @@ const login = async (req, res) => {
       config.refreshTokenSecret,
       config.refreshTokenExpiry
     );
+    console.log("🚀 ~ login ~ refreshToken:", refreshToken);
 
     const resp = {
       userId: userData._id,
@@ -207,6 +221,7 @@ const login = async (req, res) => {
       accessToken,
       refreshToken,
     };
+    console.log("🚀 ~ login ~ resp.accessToken:", resp.accessToken);
 
     const refreshTokenData = {
       userId: userData._id,

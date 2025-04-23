@@ -2,7 +2,7 @@ const User = require("../models/User");
 const Sale = require("../models/Sale");
 const Token = require("../models/Token");
 const { httpResponse } = require("../middleware/responseHandler");
-const { isAdmin } = require("../utils/helper");
+const { isAdmin, addFiltersToWhereClause } = require("../utils/helper");
 const {
   statusCode,
   message,

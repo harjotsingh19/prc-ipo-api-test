@@ -62,6 +62,7 @@ const swaggerDefinition = {
       "/admin/investments": adminComp.getAllInvestments,
       "/sales": adminComp.getSales,
       "/sales/{id}": adminComp.getSale,
+      "/sales/purchase": adminComp.purchaseToken,
       "/admin/sales": adminComp.createSale,
       "/admin/token": adminComp.createGetToken,
       "/admin/address-whitelist": adminComp.whitelistWalletAddress,

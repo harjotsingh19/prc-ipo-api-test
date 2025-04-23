@@ -68,3 +68,16 @@ sonar-project.properties
 backup
 
 create-sales.js
+
+
+sonar.sh
+
+sonar-data-backup.sh
+sonar-data-restore.sh
+
+insert-data.json
+
+sonar-project.properties
+
+.scannerwork
+

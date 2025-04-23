@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const adminController = require("../controllers/adminController");
-const auth = require("../middleware/auth");
+const { auth, isAdmin } = require("../middleware/auth");
 const adminValidator = require("../utils/validators/admin");
 const { isAmin } = require("../utils/helper");
 
@@ -17,6 +17,7 @@ router.get("/investments", auth, adminController.getAllInvestments);
 router.post(
   "/sales",
   auth,
+  isAdmin,
   [adminValidator.validateCreateSale, adminValidator.result],
   adminController.createSale
 );

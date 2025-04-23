@@ -5,7 +5,7 @@ const txnSchema = new mongoose.Schema(
   {
     paymentId: {
       type: String,
-      required: true,
+      // required: true,
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -15,6 +15,7 @@ const txnSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Sale",
     },
+    paymentIntentId: { type: String, required: true },
     // amountPaid: {
     //   type: Number,
     //   required: true,

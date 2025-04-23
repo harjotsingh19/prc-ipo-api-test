@@ -63,14 +63,6 @@ app.use(
 // Enable access uploads file from frontend
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
-// // Run cron jobs
-// createSaleCron();
-// saleFinalizeCron();
-// transactionCron();
-// icoFinalizedCron();
-// userStatusUpdateCron();
-// claimTokenCron();
-
 app.listen(config.port, () => {
   console.log(`Server running on port ${config.port}`);
 });
