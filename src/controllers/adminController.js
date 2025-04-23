@@ -512,12 +512,15 @@ const getSales = async (req, res) => {
     const skip = (page - 1) * pageSize;
     const sort = { createdAt: -1 };
 
-    const {
+    let {
       search: filterString,
       status: filterStatus,
       fromDate,
       toDate,
     } = req.query;
+
+    filterStatus = filterStatus === "true";
+
     const dateFilterColumn = "endTime";
     let whereClause = {};
 
@@ -534,12 +537,16 @@ const getSales = async (req, res) => {
       };
       whereClause = addFiltersToWhereClause(filters);
     }
+
+    console.log("filterStatus: ", filterStatus, typeof filterStatus);
+
     const sales = await Sale.find(whereClause)
       .sort(sort)
       .skip(skip)
-      .limit(pageSize);
+      .limit(pageSize)
+      .exec();
     console.log("whereClause: ", whereClause);
-    const totalCount = await Sale.countDocuments(whereClause);
+    const totalCount = await Sale.countDocuments(whereClause).exec();
 
     const responseData = {
       page,
@@ -547,6 +554,16 @@ const getSales = async (req, res) => {
       totalCount,
       sales,
     };
+
+    if (filterStatus === true) {
+      return httpResponse(
+        res,
+        statusCode.ok,
+        true,
+        message.SaleDataReturned,
+        responseData
+      );
+    }
     return httpResponse(
       res,
       statusCode.ok,
