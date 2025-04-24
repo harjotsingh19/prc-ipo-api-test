@@ -250,6 +250,7 @@ class Validator {
             throw new Error(message.incorrectMobileOrPassword);
           }
         }),
+      check("deviceId").trim().notEmpty().withMessage("deviceId is required."),
     ];
   }
 

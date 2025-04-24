@@ -36,12 +36,15 @@ const login = {
         name: "userData",
         schema: {
           type: "object",
-          required: ["email", "password"],
+          required: ["email", "password", "deviceId"],
           properties: {
             email: {
               type: "string",
             },
             password: {
+              type: "string",
+            },
+            deviceId: {
               type: "string",
             },
           },

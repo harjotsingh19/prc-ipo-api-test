@@ -78,6 +78,7 @@ const swaggerDefinition = {
       "/admin/investor/onchain-id/{userId}": adminComp.updateInvestorOnchainId,
       "/admin/claim-token-history": adminComp.getClaimTokenHistory,
       "/admin/download-investments": adminComp.downloadPdf,
+      "/admin/user-status/{id}": adminComp.updateUserStatus,
       "/investor": investorComp.getInvestments,
       "/investor/kyc": investorComp.getKycStatus,
       "/investor/investment/vesting-schedule/{id}":

@@ -162,7 +162,7 @@ const verifyOTP = async (req, res) => {
 // Login API for all users
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, deviceId } = req.body;
 
     const userData = await User.findOne({ email });
 
@@ -220,6 +220,7 @@ const login = async (req, res) => {
       status: userData.status,
       accessToken,
       refreshToken,
+      deviceId,
     };
     console.log("🚀 ~ login ~ resp.accessToken:", resp.accessToken);
 
@@ -229,7 +230,7 @@ const login = async (req, res) => {
     };
     const storeRefreshToken = await RefreshTokens.findOneAndUpdate(
       { userId: userData._id },
-      { refreshToken: refreshToken },
+      { refreshToken: refreshToken, deviceId },
       { upsert: true, new: true }
     );
     console.log("🚀 ~ login ~ storeRefreshToken:", storeRefreshToken);
@@ -466,15 +467,10 @@ const refreshToken = async (req, res) => {
       config.accessTokenSecret,
       config.accessTokenExpiry
     );
-    const newRefreshToken = await jwtSign(
-      userData,
-      config.refreshTokenSecret,
-      config.refreshTokenExpiry
-    );
 
     const responseData = {
       accessToken,
-      refreshToken: newRefreshToken,
+      refreshToken: refreshToken,
     };
     return httpResponse(
       res,
