@@ -110,3 +110,13 @@ exports.validateClaimTokenHistoryList = [
 exports.commonIdValidate = [
   check("id").trim().notEmpty().bail().withMessage("Id is required."),
 ];
+
+exports.validateUserStatus = [
+  check("isBlocked")
+    .trim()
+    .notEmpty()
+    .bail()
+    .withMessage("isBlocked is required.")
+    .isBoolean()
+    .withMessage("isBlocked must be a boolean value"),
+];
