@@ -90,4 +90,11 @@ router.get(
 // );
 // router.get("/download-investments", adminController.downloadInvestments);
 
+router.patch(
+  "/user-status/:id",
+  auth,
+  [adminValidator.validateUserStatus, adminValidator.result],
+  adminController.updateUserStatus
+);
+
 module.exports = router;

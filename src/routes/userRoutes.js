@@ -14,7 +14,12 @@ router.post("/activity", userController.addUserActivity);
 // router.patch("/enable-mfa/:id", auth, userController.enableMFA);
 // router.post("/verify-mfa/:id", userController.verifyMFA);
 router.get("/me", auth, userController.getUserProfile);
-router.post("/logout", auth, userController.logout);
+router.post(
+  "/logout",
+  auth,
+  [userValidator.validateLogout, userValidator.result],
+  userController.logout
+);
 router.put(
   "/change-password",
   auth,

@@ -151,7 +151,21 @@ const logout = {
     summary: "Logout",
     description: "Logout",
     operationId: "logout",
-    parameters: [],
+    parameters: [
+      {
+        in: "body",
+        name: "logoutData",
+        schema: {
+          type: "object",
+          required: ["deviceId"],
+          properties: {
+            deviceId: {
+              type: "string",
+            },
+          },
+        },
+      },
+    ],
     responses: apiResponse,
   },
 };

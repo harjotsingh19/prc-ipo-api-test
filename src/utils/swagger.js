@@ -78,18 +78,20 @@ const swaggerDefinition = {
       "/admin/investor/onchain-id/{userId}": adminComp.updateInvestorOnchainId,
       "/admin/claim-token-history": adminComp.getClaimTokenHistory,
       "/admin/download-investments": adminComp.downloadPdf,
+      "/admin/user-status/{id}": adminComp.updateUserStatus,
       "/investor": investorComp.getInvestments,
       "/investor/kyc": investorComp.getKycStatus,
       "/investor/investment/vesting-schedule/{id}":
         investorComp.viewVestingSchedule,
       "/investor/claim-history": investorComp.getTokenClaimHistory,
+      "/investor/contribution": investorComp.getContributions,
       "/kyc/uploadDocs": uploadDocs,
     },
     schemes: ["http", "https"],
     securityDefinitions: {
       bearerAuth: {
         type: "apiKey",
-        scheme: "bearer",
+        scheme: "Bearer",
         bearerFormat: "JWT",
         name: "Authorization",
         in: "header",

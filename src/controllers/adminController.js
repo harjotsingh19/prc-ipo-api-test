@@ -1713,6 +1713,70 @@ const downloadInvestments = async (req, res) => {
   }
 };
 
+const updateUserStatus = async (req, res) => {
+  try {
+    const adminCheck = await isAdmin(req.data.role);
+
+    if (!adminCheck) {
+      return httpResponse(
+        res,
+        statusCode.unAuthorized,
+        false,
+        message.userIsNotAdmin
+      );
+    }
+    const userId = req.params.id;
+    const user = await User.findById(userId);
+    if (!user) {
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.userDoesnotExists,
+        {}
+      );
+    }
+
+    const userData = req.body;
+    if (userData?.isBlocked == user.isBlocked) {
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.noChangeDetected,
+        {}
+      );
+    }
+    let statusData;
+    let responseMessage;
+    if (userData.isBlocked) {
+      statusData = {
+        status: "BLOCKED",
+        timestamp: Date.now(),
+        reason: userData.reason,
+      };
+      responseMessage = message.profileUpdateSuccess;
+    } else if (!userData.isBlocked) {
+      statusData = {
+        status: "UNBLOCKED",
+        timestamp: Date.now(),
+        reason: userData.reason,
+      };
+      responseMessage = message.profileUpdateSuccess;
+    }
+    user.isBlocked = userData?.isBlocked || user.isBlocked;
+    user.statusHistory.push(statusData);
+    user.status = statusData.status;
+
+    await user.save();
+
+    return httpResponse(res, statusCode.ok, true, responseMessage);
+  } catch (error) {
+    console.log("error here ===>", error);
+    return httpResponse(res, statusCode.errorPage, false, error.message);
+  }
+};
+
 module.exports = {
   getInvestors,
   getAllInvestments,
@@ -1733,4 +1797,5 @@ module.exports = {
   // updateInvestorOnchainId,
   // getClaimTokenHistory,
   // downloadInvestments,
+  updateUserStatus,
 };

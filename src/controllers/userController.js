@@ -7,6 +7,7 @@ const { status, statusCode, message } = require("../config/constants");
 const UserActivity = require("../models/UserActivity");
 const { isCurrentUser } = require("../utils/helper");
 const PrivateAddress = require("../models/PrivateAddress");
+const RefreshTokens = require("../models/refreshToken");
 
 // update login user profile
 const updateProfile = async (req, res) => {
@@ -206,7 +207,11 @@ const logout = async (req, res) => {
       timestamp: Date.now(),
       from: "Logout",
       message: message.logoutSuccess,
-    }).exec();
+    });
+    await RefreshTokens.deleteOne({
+      userId: req.data.id,
+      deviceId: req.body.deviceId,
+    });
     return httpResponse(res, statusCode.ok, true, message.logoutSuccess, {});
   } catch (error) {
     return httpResponse(res, statusCode.errorPage, false, error.message);

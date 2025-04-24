@@ -95,3 +95,11 @@ exports.validateChangePassword = [
     .bail()
     .withMessage("Confirm password is required"),
 ];
+
+exports.validateLogout = [
+  check("deviceId")
+    .trim()
+    .notEmpty()
+    .bail()
+    .withMessage("deviceId is required."),
+];

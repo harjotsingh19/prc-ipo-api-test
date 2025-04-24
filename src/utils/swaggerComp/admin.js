@@ -704,6 +704,44 @@ const downloadPdf = {
   },
 };
 
+const updateUserStatus = {
+  patch: {
+    tags: ["Admin"],
+    security: [{ bearerAuth: [] }],
+    summary: "Update user status blocked or unblocked",
+    description: "Update user status blocked or unblocked",
+    operationId: "updateUserStatus",
+    parameters: [
+      {
+        in: "path",
+        name: "userId",
+        required: true,
+        description: "Enter user id",
+        schema: {
+          type: "string",
+        },
+      },
+      {
+        in: "body",
+        name: "userData",
+        schema: {
+          type: "object",
+          required: ["isBlocked", "reason"],
+          properties: {
+            isBlocked: {
+              type: "boolean",
+            },
+            reason: {
+              type: "string",
+            },
+          },
+        },
+      },
+    ],
+    responses: apiResponse,
+  },
+};
+
 module.exports = {
   getInvestors,
   getInvestorInvestments,
@@ -725,4 +763,5 @@ module.exports = {
   downloadPdf,
   getSale,
   purchaseToken,
+  updateUserStatus,
 };

@@ -106,10 +106,19 @@ const message = {
   paymentStatusNotPaid:
     "Payment status is not 'paid'. Please check the payment status.",
 
+  //stripe
+  missingMetadata: "Required metadata is missing in the session.",
+
+  sentSessionUrl: "payment url sent successfully",
+  paymentStatusNotPaid:
+    "Payment status is not 'paid'. Please check the payment status.",
+
   // Token
   tokenDetailsReturned: "Token details returned",
   tokenCreated: "Token created successfully",
   icoFinalizedSuccess: "ICO finalized successfully",
+  tokenDocumentNotFound: "Token document not found.",
+  tokensCreditedSuccessfully: "Tokens credited successfully.",
   tokenDocumentNotFound: "Token document not found.",
   tokensCreditedSuccessfully: "Tokens credited successfully.",
 
