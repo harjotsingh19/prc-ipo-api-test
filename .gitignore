@@ -68,3 +68,25 @@ sonar-project.properties
 backup
 
 create-sales.js
+
+
+sonar.sh
+
+sonar-data-backup.sh
+sonar-data-restore.sh
+
+insert-data.json
+
+sonar-project.properties
+
+docker-compose-mongo.yaml
+
+docker-compose-sonar-scanner.yaml
+
+docker-compose-sonar.yaml
+
+admin-investors.txt
+
+.scannerwork
+
+.env.local
