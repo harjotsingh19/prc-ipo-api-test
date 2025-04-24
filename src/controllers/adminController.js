@@ -1571,6 +1571,37 @@ const downloadInvestments = async (req, res) => {
   }
 };
 
+const transactions = async (req, res) => {
+  try {
+    const { page, investorAddress } = req.query;
+    const pageSize = parseInt(req.query.pageSize);
+    const skip = (page - 1) * pageSize;
+    const query = {};
+
+    const recentTransactions = await Transaction.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(pageSize);
+    const totalCount = await Transaction.countDocuments();
+    const responseData = {
+      page,
+      pageSize,
+      totalCount,
+      recentTransactions,
+    };
+
+    return httpResponse(
+      res,
+      statusCode.ok,
+      true,
+      message.dashboardDataFetchSuccess,
+      responseData
+    );
+  } catch (error) {
+    return httpResponse(res, statusCode.errorPage, false, error.message);
+  }
+};
+
 module.exports = {
   setAdminAddress,
   getInvestors,
@@ -1592,4 +1623,5 @@ module.exports = {
   updateInvestorOnchainId,
   getClaimTokenHistory,
   downloadInvestments,
+  transactions,
 };

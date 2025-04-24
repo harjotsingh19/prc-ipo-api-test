@@ -83,4 +83,6 @@ router.get(
 );
 router.get("/download-investments", adminController.downloadInvestments);
 
+router.get("/transactions", auth, isAdmin, adminController.transactions);
+
 module.exports = router;

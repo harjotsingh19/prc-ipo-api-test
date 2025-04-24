@@ -704,6 +704,45 @@ const downloadPdf = {
   },
 };
 
+const getTransactions = {
+  get: {
+    tags: ["Admin"],
+    security: [{ bearerAuth: [] }],
+    summary: "Get Transactions listing",
+    description: "Get Transactions listing",
+    operationId: "getAllTransactions",
+    parameters: [
+      {
+        in: "query",
+        name: "page",
+        required: true,
+        description: "Enter page number",
+        schema: {
+          type: "string",
+        },
+      },
+      {
+        in: "query",
+        name: "pageSize",
+        required: true,
+        description: "Enter page size",
+        schema: {
+          type: "string",
+        },
+      },
+      {
+        in: "query",
+        name: "status",
+        schema: {
+          type: "string",
+        },
+        description: "The Status you have selected is Invalid.",
+      },
+    ],
+    responses: apiResponse,
+  },
+};
+
 module.exports = {
   getInvestors,
   getInvestorInvestments,
@@ -725,4 +764,5 @@ module.exports = {
   downloadPdf,
   getSale,
   purchaseToken,
+  getTransactions,
 };

@@ -84,6 +84,7 @@ const swaggerDefinition = {
         investorComp.viewVestingSchedule,
       "/investor/claim-history": investorComp.getTokenClaimHistory,
       "/kyc/uploadDocs": uploadDocs,
+      "/admin/transactions": adminComp.getTransactions,
     },
     schemes: ["http", "https"],
     securityDefinitions: {
