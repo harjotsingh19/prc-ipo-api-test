@@ -11,6 +11,10 @@ const refreshTokenSchema = new mongoose.Schema({
     index: true,
     required: true,
   },
+  deviceId: {
+    type: String,
+    required: true,
+  },
 });
 
 module.exports = mongoose.model("RefreshTokens", refreshTokenSchema);
