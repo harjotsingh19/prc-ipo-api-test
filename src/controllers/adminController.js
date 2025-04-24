@@ -840,6 +840,7 @@ const getSales = async (req, res) => {
       totalCount,
       sales,
     };
+    console.log("🚀 ~ getSales ~ responseData:", responseData);
 
     if (filterStatus === true) {
       return httpResponse(

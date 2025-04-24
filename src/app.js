@@ -24,8 +24,15 @@ const app = express();
 app.disable("x-powered-by");
 
 app.use(morgan("tiny"));
-app.use(bodyParser.json());
-app.use(express.json());
+
+// Middleware to capture raw body for Stripe webhook
+app.use(
+  bodyParser.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString(); // Store raw body in req.rawBody
+    },
+  })
+);
 
 // For Connecting Frontend to backend
 const corsOptions = {
@@ -63,5 +70,5 @@ app.use(
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.listen(config.port, () => {
-  console.log(`Serverrr running on port ${config.port}`);
+  console.log(`Server running on port ${config.port}`);
 });

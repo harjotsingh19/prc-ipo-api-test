@@ -17,4 +17,5 @@ module.exports = {
 
   //stripe
   STRIPE_TOKEN: process.env.STRIPE_TOKEN,
+  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
 };

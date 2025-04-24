@@ -10,7 +10,6 @@ const webHookController = require("../controllers/saleController");
 
 router.get(
   "/",
-  auth,
   [adminValidator.validateSaleList, adminValidator.result],
   adminController.getSales
 );

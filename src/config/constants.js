@@ -143,6 +143,7 @@ const message = {
 
   //webhook
   webhookProcessingError: "Error processing the webhook.",
+  webhookSignatureVerificationFailed: "Webhook signature verification failed.",
 
   //validation
   validationError: "Validation failed",

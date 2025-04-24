@@ -1,55 +1,80 @@
 const config = require("../config/config");
 const secret_key = config.STRIPE_TOKEN;
 const stripe = require("stripe")(secret_key);
+const StripeSessionPayment = require("../models/stripePaymentSession");
 
-const createSession = async (
-  customerId,
-  amount,
-  currency,
-  mode,
-  quantity,
-  successUrl,
-  errorUrl,
-  metaData
-) => {
+const createSession = async (options) => {
   try {
+    const {
+      customerId,
+      tokensPrice,
+      currency,
+      mode,
+      successUrl,
+      errorUrl,
+      metaData,
+      couponId,
+      quantity,
+    } = options;
+
     const sessionPayload = {
       mode,
       customer: customerId,
       payment_method_types: ["card"],
+      payment_method_options: {
+        card: {},
+      },
       metadata: metaData,
       line_items: [
         {
           price_data: {
             currency: currency,
             product_data: {
-              name: "My Product",
-              description: "One-time purchase",
+              name: "PRC TOKEN",
             },
-            unit_amount: amount,
+            unit_amount: tokensPrice,
           },
-          quantity,
+          quantity: quantity,
         },
       ],
+      payment_intent_data: { metadata: metaData },
       success_url: successUrl,
       cancel_url: errorUrl,
     };
 
     if (couponId) {
-      sessionPayload.discounts = [
-        {
-          coupon: couponId,
-        },
-      ];
+      sessionPayload.discounts = [{ coupon: couponId }];
     }
+
     const sessionData = await stripe.checkout.sessions.create(sessionPayload);
-    if (sessionData) {
-      return { success: true, data: { resData: sessionData } };
-    } else {
-      return { success: false, data: { resData: {} } };
-    }
+    console.log("🚀 ~ createSession ~ sessionData:", sessionData);
+
+    // Save session data to the database
+    await StripeSessionPayment.create({
+      sessionId: sessionData.id,
+      paymentIntentId: sessionData.payment_intent || null,
+      customerId: sessionData.customer,
+      userId: metaData.userId || null,
+      saleId: metaData.saleId || null,
+      tokenIn: quantity,
+      tokenOut: tokensPrice / 100,
+      currency: sessionData.currency,
+      email: sessionData.customer_details.email || null,
+      sessionCreationTime: sessionData.created,
+      sessionExpirationTime: sessionData.expires_at || null,
+      paymentStatus: sessionData.payment_status || "unpaid",
+      failureReason: sessionData.failure_reason || null,
+      expirationTime: sessionData.expires_at
+        ? new Date(sessionData.expires_at * 1000)
+        : null,
+      metadata: sessionData.metadata || {},
+      eventType: "checkout.session",
+      status: sessionData.status || "incomplete",
+    });
+
+    return { success: true, data: { url: sessionData.url } };
   } catch (error) {
-    console.log("error: ", error);
+    console.log("error while paying: ", error);
     return { success: false, data: { resData: {} }, error };
   }
 };
@@ -75,9 +100,9 @@ const createCustomerPortalConfiguration = async (
   try {
     const configuration = await stripe.billingPortal.configurations.create({
       business_profile: {
-        headline: config.PRODUCT_NAME, // Replace with your business name
-        privacy_policy_url: privacyPolicyUrl, // Replace with your privacy policy URL
-        terms_of_service_url: termsAndConditionUrl, // Replace with your terms of service URL
+        headline: config.PRODUCT_NAME,
+        privacy_policy_url: privacyPolicyUrl,
+        terms_of_service_url: termsAndConditionUrl,
       },
       features: {
         customer_update: {

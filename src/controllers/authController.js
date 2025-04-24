@@ -324,17 +324,18 @@ const forgotPassword = async (req, res) => {
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = resetTokenExpiry;
     await user.save();
+    console.log("🚀 ~ forgotPassword ~ user role :", user.role);
 
     let frontendUrl;
-    if (user.role !== "ADMIN") {
-      frontendUrl = config.userFrontendUrl;
-    } else {
-      frontendUrl = config.adminFrontendUrl;
+    if (user.role === "ADMIN") {
+      frontendUrl = `${config.adminFrontendUrl}/auth/reset-password/?token=${resetToken}`;
+    } else if (user.role === "INVESTOR") {
+      frontendUrl = `${config.userFrontendUrl}/auth/reset-password/?resetToken=${resetToken}`;
     }
 
     console.log("🚀 ~ forgotPassword ~ frontendUrl:", frontendUrl);
 
-    const resetLink = `${frontendUrl}/?resetToken=${resetToken}`;
+    const resetLink = `${frontendUrl}`;
 
     console.log("🚀 ~ forgotPassword ~ resetLink:", resetLink);
 
