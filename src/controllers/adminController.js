@@ -279,20 +279,32 @@ const { sendEmail } = require("../utils/mailManager");
 
 const getInvestors = async (req, res) => {
   try {
-    const { page = 1, pageSize = 10, investorId } = req.query; // Extract query parameters
-    console.log("🚀 ~ getInvestors ~ investorId:", investorId);
+    const { page = 1, pageSize = 10, investorId, isBlocked } = req.query; // Extract query parameters
+    console.log(
+      "🚀 ~ getInvestors ~ investorId:",
+      investorId,
+      "isBlocked:",
+      isBlocked
+    );
+
+    console.log("isBlocked: ", isBlocked, typeof isBlocked);
+
     const skip = (page - 1) * pageSize; // Calculate the number of documents to skip for pagination
 
     // Define the base condition to filter only investors
-    let condition = { role: "INVESTOR" };
+    let condition = { role: "INVESTOR", isEmailVerified: true }; // Ensure isEmailVerified is always true
 
     // If an investorId is provided, filter by that specific investor
     if (investorId) {
-      condition = {
-        role: "INVESTOR",
-        _id: new mongoose.Types.ObjectId(`${req.query.investorId}`),
-      };
+      condition._id = new mongoose.Types.ObjectId(`${investorId}`);
     }
+
+    // If isBlocked is provided, filter by blocked or non-blocked status
+    if (isBlocked !== undefined) {
+      condition.isBlocked = isBlocked === "true"; // Convert string to boolean
+    }
+
+    console.log("isBlocked: ", isBlocked, typeof isBlocked);
 
     const aggregatePipeline = [
       {
@@ -337,6 +349,7 @@ const getInvestors = async (req, res) => {
           lastName: 1,
           email: 1,
           walletAddress: 1,
+          isBlocked: 1, // Include the isBlocked field in the response
           tokenIn: 1,
           tokenOut: 1,
           "transactions.paymentId": 1,
@@ -397,6 +410,7 @@ const getInvestors = async (req, res) => {
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
+
 const getAllInvestments = async (req, res) => {
   try {
     const { filter, page, saleId } = req.query;
