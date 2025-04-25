@@ -760,6 +760,82 @@ const getTransactions = {
   },
 };
 
+const getAirdrop = {
+  get: {
+    tags: ["Admin"],
+    security: [{ bearerAuth: [] }],
+    summary: "Get Sale Air drop listing",
+    description: "Get Sale Air drop listing",
+    operationId: "getAllSaleAirdrop",
+    parameters: [
+      {
+        in: "path",
+        name: "id",
+        required: true,
+        description: "Enter sale Id",
+        schema: {
+          type: "string",
+        },
+      },
+      {
+        in: "query",
+        name: "page",
+        required: true,
+        description: "Enter page number",
+        schema: {
+          type: "string",
+        },
+      },
+      {
+        in: "query",
+        name: "pageSize",
+        required: true,
+        description: "Enter page size",
+        schema: {
+          type: "string",
+        },
+      },
+      {
+        in: "query",
+        name: "status",
+        schema: {
+          type: "string",
+        },
+        description: "The Status you have selected is Invalid.",
+      },
+    ],
+    responses: apiResponse,
+  },
+};
+
+const updateSaleTransactions = {
+  put: {
+    tags: ["Admin"],
+    security: [{ bearerAuth: [] }],
+    summary: "Update sale air drop transactions",
+    description: "Update sale air drop transactions",
+    operationId: "createSaleTransactions",
+    parameters: [
+      {
+        in: "body",
+        name: "saleTransactionData",
+        schema: {
+          type: "object",
+          required: ["saleId", "userIds"],
+          properties: {
+            userIds: {
+              type: "string",
+            },
+            saleId: {
+              type: "string",
+            },
+          },
+        },
+      },
+    ],
+    responses: apiResponse,
+  },
+};
 module.exports = {
   getInvestors,
   getInvestorInvestments,
@@ -782,4 +858,6 @@ module.exports = {
   getSale,
   purchaseToken,
   getTransactions,
+  getAirdrop,
+  updateSaleTransactions,
 };

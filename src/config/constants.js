@@ -98,6 +98,8 @@ const message = {
   saleEnded: "Sale ended successfully",
   SaleDataReturned: "Sale data returned",
   SaleNameAlreadyExists: "Sale name already exists",
+  allTransactionReturned: "All transaction Fetched Successfully",
+  allTransactionUpdated: "Transaction Updated Successfully",
 
   //stripe
   missingMetadata: "Required metadata is missing in the session.",

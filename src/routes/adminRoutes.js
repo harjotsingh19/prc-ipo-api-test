@@ -26,6 +26,23 @@ router.post(
   [adminValidator.validateCreateSale, adminValidator.result],
   adminController.createSale
 );
+router.get(
+  "/sales/airdrop/:id",
+  auth,
+  isAdmin,
+  [
+    [...adminValidator.validateSaleList, ...adminValidator.commonIdValidate],
+    adminValidator.result,
+  ],
+  adminController.getSalesAirDropTransactions
+);
+
+router.put(
+  "/sales/airdrop",
+  auth,
+  isAdmin,
+  adminController.updateSalesAirDropTransactions
+);
 
 router.get(
   "/sales",
@@ -75,6 +92,8 @@ router.patch(
   [adminValidator.validateUserStatus, adminValidator.result],
   adminController.updateUserStatus
 );
+
+router.get("/transactions", auth, isAdmin, adminController.transactions);
 
 router.get("/transactions", auth, isAdmin, adminController.transactions);
 

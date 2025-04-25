@@ -87,6 +87,8 @@ const swaggerDefinition = {
       "/investor/contribution": investorComp.getContributions,
       "/kyc/uploadDocs": uploadDocs,
       "/admin/transactions": adminComp.getTransactions,
+      "/admin/sales/airdrop/{id}": adminComp.getAirdrop,
+      "/admin/sales/airdrop": adminComp.updateSaleTransactions,
     },
     schemes: ["http", "https"],
     securityDefinitions: {
