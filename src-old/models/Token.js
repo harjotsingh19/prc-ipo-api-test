@@ -1,51 +1,34 @@
-"use strict";
 const mongoose = require("mongoose");
 
 const tokenSchema = new mongoose.Schema(
   {
     tokenName: {
       type: String,
-      // default: "EncryptedCash"
+      default: "PRC Coin",
     },
     tokenSymbol: {
       type: String,
-      // default: "ECT"
-    },
-    tokenAddress: {
-      type: String,
-      // default: "0x0000000000000000000000000000000000000000"
+      default: "PRC",
     },
     totalSupply: {
       type: Number,
-      // default: 100000000
+      default: 1000000000, // Example supply, can be adjusted
     },
     fundsRaised: {
       type: Number,
-      // default: 0
+      default: 0,
     },
     availableTokens: {
       type: Number,
-      // default: 100000000
+      default: 1000000000, // Initially equal to totalSupply
     },
     claimedTokens: {
       type: Number,
-      // default: 0
-    },
-    finalTokensSold: {
-      type: Number,
-      default: 0,
-    },
-    icoFinalized: {
-      type: Boolean,
-      default: false,
-    },
-    tokenDecimals: {
-      type: Number,
-      // default: 18
+      default: 0, // Tracks total tokens sold
     },
     tokenImage: {
       type: String,
-      default: "",
+      default: "", // URL to token image, if any
     },
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }

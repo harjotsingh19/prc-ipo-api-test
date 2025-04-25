@@ -12,12 +12,7 @@ router.get(
 );
 router.get("/investments", auth, adminController.getAllInvestments);
 
-router.get(
-  "/investments/:id", 
-  auth,
-  adminController.getInvestmentDetails 
-);
-
+router.get("/investments/:id", auth, adminController.getInvestmentDetails);
 
 router.post(
   "/sales",
