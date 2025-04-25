@@ -76,4 +76,6 @@ router.patch(
   adminController.updateUserStatus
 );
 
+router.get("/transactions", auth, isAdmin, adminController.transactions);
+
 module.exports = router;
