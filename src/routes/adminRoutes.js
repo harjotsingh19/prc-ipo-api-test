@@ -31,6 +31,13 @@ router.get(
   adminController.getSalesAirDropTransactions
 );
 
+router.put(
+  "/sales/airdrop",
+  auth,
+  isAdmin,
+  adminController.updateSalesAirDropTransactions
+);
+
 router.get(
   "/sales",
   auth,

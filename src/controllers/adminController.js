@@ -1681,21 +1681,44 @@ const getSalesAirDropTransactions = async (req, res) => {
       transactionsData,
     };
 
-    if (filterStatus === true) {
-      return httpResponse(
-        res,
-        statusCode.ok,
-        true,
-        message.SaleDataReturned,
-        responseData
-      );
-    }
     return httpResponse(
       res,
       statusCode.ok,
       true,
-      message.allSalesReturned,
+      message.allTransactionReturned,
       responseData
+    );
+  } catch (error) {
+    console.log("error: ", error);
+    return httpResponse(res, statusCode.errorPage, false, error.message);
+  }
+};
+
+const updateSalesAirDropTransactions = async (req, res) => {
+  try {
+    const { userIds, saleId } = req.body;
+
+    const transactionsData = await Transaction.updateMany(
+      { userId: { $in: userIds }, saleId: new ObjectId(saleId) },
+      { paymentTokenOutStatus: true }
+    );
+
+    if (transactionsData.modifiedCount === transactionsData.matchedCount) {
+      return httpResponse(
+        res,
+        statusCode.ok,
+        true,
+        message.allSalesReturned,
+        {}
+      );
+    }
+
+    return httpResponse(
+      res,
+      statusCode.badRequest,
+      true,
+      message.allTransactionUpdated,
+      {}
     );
   } catch (error) {
     console.log("error: ", error);
@@ -1726,4 +1749,5 @@ module.exports = {
   downloadInvestments,
   transactions,
   getSalesAirDropTransactions,
+  updateSalesAirDropTransactions,
 };

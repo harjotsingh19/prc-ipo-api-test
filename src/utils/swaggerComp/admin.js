@@ -790,6 +790,34 @@ const getAirdrop = {
   },
 };
 
+const updateSaleTransactions = {
+  put: {
+    tags: ["Admin"],
+    security: [{ bearerAuth: [] }],
+    summary: "Update sale air drop transactions",
+    description: "Update sale air drop transactions",
+    operationId: "createSaleTransactions",
+    parameters: [
+      {
+        in: "body",
+        name: "saleTransactionData",
+        schema: {
+          type: "object",
+          required: ["saleId", "userIds"],
+          properties: {
+            userIds: {
+              type: "string",
+            },
+            saleId: {
+              type: "string",
+            },
+          },
+        },
+      },
+    ],
+    responses: apiResponse,
+  },
+};
 module.exports = {
   getInvestors,
   getInvestorInvestments,
@@ -813,4 +841,5 @@ module.exports = {
   purchaseToken,
   getTransactions,
   getAirdrop,
+  updateSaleTransactions,
 };
