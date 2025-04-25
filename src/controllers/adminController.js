@@ -585,7 +585,6 @@ const getSales = async (req, res) => {
       totalCount,
       sales,
     };
-    console.log("🚀 ~ getSales ~ responseData:", responseData);
 
     if (filterStatus === true) {
       return httpResponse(
@@ -1105,45 +1104,22 @@ const dashboard = async (req, res) => {
     }).exec();
     const recentTransactions = await Transaction.find()
       .sort({ created_at: -1 })
-      .limit(10)
-      .exec();
-    const saleCount = Number(await rvaContract.methods.saleCount().call());
+      .limit(10);
+
     const distributionAnalytics = {
       totalClaimedTokens: 0,
-      totalUnclaimedTokens: 0,
-      totalTokens: 0,
+      // totalUnclaimedTokens: 0,
+      // totalTokens: 0,
     };
-    const investors = await Transaction.aggregate([
-      {
-        $group: {
-          _id: "$from",
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          investorAddress: "$_id",
-        },
-      },
-    ]).exec();
-
     let totalFundRaised = BigInt(0);
-    for (let i = 1; i <= saleCount; i++) {
-      const sale = await rvaContract.methods.sales(i).call();
-      totalFundRaised += BigInt(sale[7]);
-      for (const investor of investors) {
-        const vestingData = await vestingContract.methods
-          .getVestingDetails(i, investor.investorAddress)
-          .call();
-        distributionAnalytics.totalClaimedTokens += Number(
-          vestingData._claimedAmount
-        );
-        distributionAnalytics.totalTokens += Number(vestingData._totalAmount);
-      }
+    const token = await Token.findOne();
+    if (token) {
+      totalFundRaised = token?.fundsRaised;
+      // distributionAnalytics.totalTokens = token?.totalSupply;
+      distributionAnalytics.totalClaimedTokens = token?.claimedTokens;
+      // distributionAnalytics.totalUnclaimedTokens = token?.availableTokens;
     }
-    distributionAnalytics.totalUnclaimedTokens =
-      distributionAnalytics.totalTokens -
-      distributionAnalytics.totalClaimedTokens;
+
     const responseData = {
       totalInvestors,
       totalFundRaised: totalFundRaised.toString(),
@@ -1503,18 +1479,18 @@ module.exports = {
   createSale,
   getSales,
   getSale,
-  // getTokenDetails,
-  // createToken,
-  // getAllAddressWhitelist,
-  // getOneInvestorAllInvestments,
-  // getSaleStatistics,
-  // getUserAnalytics,
-  // dashboard,
-  // getDistributionAnalytics,
-  // updateInvestorKycStatus,
-  // getAllAddressBlacklist,
-  // updateInvestorOnchainId,
-  // getClaimTokenHistory,
-  // downloadInvestments,
+  getTokenDetails,
+  createToken,
+  getAllAddressWhitelist,
+  getOneInvestorAllInvestments,
+  getSaleStatistics,
+  getUserAnalytics,
+  dashboard,
+  getDistributionAnalytics,
+  updateInvestorKycStatus,
+  getAllAddressBlacklist,
+  updateInvestorOnchainId,
+  getClaimTokenHistory,
+  downloadInvestments,
   updateUserStatus,
 };

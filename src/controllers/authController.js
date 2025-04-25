@@ -71,6 +71,7 @@ const registerInvestor = async (req, res) => {
       // status: status.NEW,
       customerStripeId,
     });
+    console.log("🚀 ~ registerInvestor ~ user:", user);
 
     if (user) {
       const otp = await generateOTP(user._id, otpOperations.emailVerification);
@@ -88,6 +89,7 @@ const registerInvestor = async (req, res) => {
       user
     );
   } catch (error) {
+    console.log("error here ===>", error.message);
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
@@ -100,20 +102,30 @@ const verifyOTP = async (req, res) => {
       .populate("userId")
       .exec();
     if (!otpData) {
-      return httpResponse(res, statusCode.errorPage, false, message.otpExpired);
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.otpExpired
+      );
     }
 
     if (otpData.userId.isEmailVerified) {
       return httpResponse(
         res,
-        statusCode.errorPage,
+        statusCode.badRequest,
         false,
         message.userAlreadyVerified
       );
     }
 
     if (otpData.otp !== otp) {
-      return httpResponse(res, statusCode.errorPage, false, message.invalidOtp);
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.invalidOtp
+      );
     }
 
     await otpData.deleteOne({ userId, operation }).exec();
@@ -267,14 +279,21 @@ const resendOtp = async (req, res) => {
       );
     }
     await Otp.deleteMany({ userId: userData._id, operation }).exec();
+    await Otp.deleteMany({ userId: userData._id, operation }).exec();
 
     const otp = await generateOTP(userData._id, operation);
+    console.log("🚀 ~ resendOtp ~ otp:", otp);
 
     if (operation == otpOperations.emailVerification) {
-      await sendEmail(userData.email, emailTemplateId.emailVerification, {
-        user_name: userData.name,
-        otp,
-      });
+      const t = await sendEmail(
+        userData.email,
+        emailTemplateId.emailVerification,
+        {
+          user_name: userData.firstName,
+          otp,
+        }
+      );
+      console.log("🚀 ~ resendOtp ~ t:", t.response.body);
     }
 
     return httpResponse(res, statusCode.ok, true, message.otpResentSuccess);
@@ -326,6 +345,7 @@ const resetPassword = async (req, res) => {
   try {
     const { newPassword, confirmPassword } = req.body;
     const token = req.params.token;
+    console.log("🚀 ~ resetPassword ~ token:", token);
 
     const user = await User.findOne({
       resetPasswordToken: token,
@@ -360,6 +380,7 @@ const resetPassword = async (req, res) => {
 
     return httpResponse(res, statusCode.ok, true, message.passwordUpdated);
   } catch (error) {
+    console.log("🚀 ~ resetPassword ~ error:", error.message);
     return httpResponse(res, statusCode.badRequest, false, error.message);
   }
 };

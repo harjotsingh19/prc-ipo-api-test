@@ -47,7 +47,7 @@ const purchaseToken = async (req, res) => {
 
     let customerStripeId = userData?.customerStripeId;
     if (!customerStripeId) {
-      const customerData = await createCustomer(userData.email);
+      const customerData = await createCustomer(userData.email).exec();
       if (!customerData.isSuccess) {
         return httpResponse(
           res,
