@@ -5,6 +5,7 @@ const { statusCode, message } = require("../config/constants");
 const Transaction = require("../models/Transaction");
 const tokenVesting = require("../models/tokenVesting");
 const TokenClaimHistory = require("../models/TokenClaimHistory");
+const Sale = require("../models/Sale");
 
 // get user's all/single investments
 
@@ -513,7 +514,13 @@ const getTokenClaimHistory = async (req, res) => {
 
 const getTokenContribution = async (req, res) => {
   try {
+    const activeSale = await Sale.findOne({ active: true });
     const totalTokenOut = await Transaction.aggregate([
+      {
+        $match: {
+          saleId: activeSale?._id,
+        },
+      },
       {
         $addFields: {
           tokenOutNumeric: { $toDouble: "$tokenOut" },
