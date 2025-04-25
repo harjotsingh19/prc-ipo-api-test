@@ -22,5 +22,5 @@ exports.validatePurchaseToken = [
     .notEmpty()
     .bail()
     .withMessage("Quantity is required."),
-  check("id").trim().notEmpty().bail().withMessage("Id is required."),
+  check("saleId").trim().notEmpty().bail().withMessage("Sale Id is required."),
 ];

@@ -124,6 +124,8 @@ const message = {
 
   // User
   unauthorizedUser: "User is not authorized",
+  userBlockSuccess: "User blocked successfully",
+  userUnblockSuccess: "User unblocked successfully",
   profileUpdateSuccess: "Profile updated successfully",
   emailAlreadyExist: "Email already exist",
   emailNotExist: "email does not exist",

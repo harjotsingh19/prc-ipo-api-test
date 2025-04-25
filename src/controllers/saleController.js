@@ -17,7 +17,7 @@ const purchaseToken = async (req, res) => {
   try {
     const userId = req.data.id;
     console.log("🚀 ~ purchaseToken ~ userId:", userId);
-    const { id: saleId, quantity, tokensPrice } = req.body;
+    const { saleId, quantity, amountPaid } = req.body;
     console.log("🚀 ~ purchaseToken ~ req:", req.body);
 
     const userData = await User.findById({
@@ -34,6 +34,7 @@ const purchaseToken = async (req, res) => {
     }
 
     const saleData = await Sale.findById(saleId).exec();
+    console.log("🚀 ~ purchaseToken ~ saleData:", saleData);
 
     if (saleData?.active !== true) {
       return httpResponse(
@@ -65,16 +66,17 @@ const purchaseToken = async (req, res) => {
 
     const checkoutSession = await createSession({
       customerId: customerStripeId,
-      tokensPrice: Number(tokensPrice), // in cents
+      amountPaid: Number(amountPaid), // in cents
       currency: "usd",
       mode: "payment",
-      successUrl: `${config.userFrontendUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
-      errorUrl: `${config.userFrontendUrl}/cancel`,
+      successUrl: `${config.userFrontendUrl}/checkout?session_id={CHECKOUT_SESSION_ID}`,
+      // errorUrl: `${config.userFrontendUrl}/failurePayment?session_id={CHECKOUT_SESSION_ID}`,
+      errorUrl: `${config.userFrontendUrl}/cancel?session_id={CHECKOUT_SESSION_ID}`,
       metaData: {
         userId: userId,
         tokenIn: Number(quantity),
         saleId: saleData._id.toString(),
-        tokenOut: Number(tokensPrice / 100),
+        tokenOut: Number(amountPaid / 100),
       },
       couponId: "",
       quantity: Number(quantity),
@@ -84,9 +86,9 @@ const purchaseToken = async (req, res) => {
     if (!checkoutSession.success) {
       return httpResponse(
         res,
-        statusCode.errorPage,
+        statusCode.badRequest,
         false,
-        message.saleNotFound
+        message.paymentUnsuccessful
       );
     }
     return httpResponse(res, statusCode.ok, true, message.sentSessionUrl, {
@@ -94,7 +96,7 @@ const purchaseToken = async (req, res) => {
     });
   } catch (error) {
     console.log("🚀 ~ purchaseToken ~ error.message:", error.message);
-    return httpResponse(res, statusCode.errorPage, false, error.message);
+    return httpResponse(res, statusCode.badRequest, false, error.message);
   }
 };
 

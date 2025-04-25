@@ -16,50 +16,49 @@ const {
   emailTemplateId,
 } = require("../config/constants");
 const config = require("../config/config");
-// const { createApplicant } = require("./kycController")
 const { sendEmail } = require("../utils/mailManager");
 
-// To register an investor
 const registerInvestor = async (req, res) => {
   try {
     const { firstName, lastName, email, password, role } = req.body;
 
     const userEmail = email.toLowerCase();
-    const userExists = await User.findOne({ email: userEmail });
+    const userExists = await User.findOne({
+      email: userEmail,
+      isEmailVerified: false,
+    });
+
+    let customerStripeId;
 
     if (userExists) {
-      if (!userExists.isEmailVerified) {
-        await Otp.deleteMany({ userId: userExists._id }).exec();
-
-        await User.deleteOne({ email: userEmail }).exec();
-      } else {
-        return httpResponse(
-          res,
-          statusCode.errorPage,
-          false,
-          message.userEmailAlreadyExists,
-          {}
-        );
-      }
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-    const statusHistory = {
-      status: status.NEW,
-      timestamp: Date.now(),
-      reason: "",
-    };
-
-    const customerData = await createCustomer(userEmail);
-    if (!customerData.isSuccess) {
+      customerStripeId = userExists.customerStripeId; // Reuse the existing Stripe customer ID
+      await Otp.deleteMany({ userId: userExists._id }).exec();
+      await User.deleteOne({ email: userEmail }).exec();
+    } else {
       return httpResponse(
         res,
         statusCode.errorPage,
         false,
-        message.userNotCreatedOnStripe,
-        null
+        message.userEmailAlreadyExists,
+        {}
       );
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    if (!customerStripeId) {
+      const customerData = await createCustomer(userEmail);
+      if (!customerData.isSuccess) {
+        return httpResponse(
+          res,
+          statusCode.errorPage,
+          false,
+          message.userNotCreatedOnStripe,
+          null
+        );
+      }
+      customerStripeId = customerData.customerId;
     }
 
     const user = await User.create({
@@ -69,25 +68,17 @@ const registerInvestor = async (req, res) => {
       password: hashedPassword,
       role,
       isActive: true,
-      status: status.NEW,
-      statusHistory: statusHistory,
-      customerStripeId: customerData.customerId,
+      // status: status.NEW,
+      customerStripeId,
     });
-    console.log("🚀 ~ registerInvestor ~ user:", user);
 
     if (user) {
       const otp = await generateOTP(user._id, otpOperations.emailVerification);
-      const emailSent = await sendEmail(
-        user.email,
-        emailTemplateId.emailVerification,
-        {
-          user_name: user.firstName,
-          otp,
-        }
-      );
+      await sendEmail(user.email, emailTemplateId.emailVerification, {
+        user_name: user.firstName,
+        otp,
+      });
     }
-
-    console.log("🚀 ~ registerInvestor ~ emailSent:", emailSent);
 
     return httpResponse(
       res,
@@ -97,21 +88,17 @@ const registerInvestor = async (req, res) => {
       user
     );
   } catch (error) {
-    console.log("error here ===>", error.message);
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
 
-// API to verify the OTP
 const verifyOTP = async (req, res) => {
   try {
     const { otp, userId, operation } = req.body;
-    console.log("🚀 ~ verifyOTP ~ req.body:", req.body);
 
     const otpData = await Otp.findOne({ userId: userId, operation })
       .populate("userId")
       .exec();
-    console.log("🚀 ~ verifyOTP ~ otpData:", otpData);
     if (!otpData) {
       return httpResponse(res, statusCode.errorPage, false, message.otpExpired);
     }
@@ -129,10 +116,9 @@ const verifyOTP = async (req, res) => {
       return httpResponse(res, statusCode.errorPage, false, message.invalidOtp);
     }
 
-    // delete otp data
     await otpData.deleteOne({ userId, operation }).exec();
 
-    const statusHistory = { timestamp: Date.now(), reason: "" };
+    // const statusHistory = { timestamp: Date.now(), reason: "" };
     const updateUserData = {
       updated_at: Date.now(),
     };
@@ -141,7 +127,7 @@ const verifyOTP = async (req, res) => {
       case otpOperations.emailVerification:
         updateUserData.isEmailVerified = true;
         updateUserData.status = status.EMAIL_VERIFIED;
-        statusHistory.status = status.EMAIL_VERIFIED;
+        // statusHistory.status = status.EMAIL_VERIFIED;
         break;
       case otpOperations.phoneVerification:
         updateUserData.isPhoneVerified = true;
@@ -153,7 +139,7 @@ const verifyOTP = async (req, res) => {
     const updatedUserData = await User.findOneAndUpdate(
       { _id: userId },
       {
-        $push: { statusHistory: statusHistory },
+        // $push: { statusHistory: statusHistory },
         $set: updateUserData,
       },
       {
@@ -170,12 +156,10 @@ const verifyOTP = async (req, res) => {
       accessToken: accessToken,
     });
   } catch (error) {
-    console.log("error here ===>", error);
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
 
-// Login API for all users
 const login = async (req, res) => {
   try {
     const { email, password, deviceId } = req.body;
@@ -225,7 +209,6 @@ const login = async (req, res) => {
       config.refreshTokenSecret,
       config.refreshTokenExpiry
     );
-    console.log("🚀 ~ login ~ refreshToken:", refreshToken);
 
     const resp = {
       userId: userData._id,
@@ -238,14 +221,12 @@ const login = async (req, res) => {
       refreshToken,
       deviceId,
     };
-    console.log("🚀 ~ login ~ resp.accessToken:", resp.accessToken);
 
-    const storeRefreshToken = await RefreshTokens.findOneAndUpdate(
+    await RefreshTokens.findOneAndUpdate(
       { userId: userData._id },
       { refreshToken: refreshToken, deviceId },
       { upsert: true, new: true }
     ).exec();
-    console.log("🚀 ~ login ~ storeRefreshToken:", storeRefreshToken);
 
     return httpResponse(
       res,
@@ -259,7 +240,6 @@ const login = async (req, res) => {
   }
 };
 
-// Resend OTP
 const resendOtp = async (req, res) => {
   try {
     const { userId, operation } = req.body;
@@ -303,7 +283,6 @@ const resendOtp = async (req, res) => {
   }
 };
 
-// Forgot Password API
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -319,13 +298,11 @@ const forgotPassword = async (req, res) => {
       );
     }
 
-    // Generate a reset token
     const resetToken = crypto.randomBytes(32).toString("hex");
-    const resetTokenExpiry = Date.now() + 3600000; // Token valid for 1 hour
+    const resetTokenExpiry = Date.now() + 3600000;
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = resetTokenExpiry;
     await user.save();
-    console.log("🚀 ~ forgotPassword ~ user role :", user.role);
 
     let frontendUrl;
     if (user.role === "ADMIN") {
@@ -334,11 +311,7 @@ const forgotPassword = async (req, res) => {
       frontendUrl = `${config.userFrontendUrl}/auth/reset-password/?resetToken=${resetToken}`;
     }
 
-    console.log("🚀 ~ forgotPassword ~ frontendUrl:", frontendUrl);
-
     const resetLink = `${frontendUrl}`;
-
-    console.log("🚀 ~ forgotPassword ~ resetLink:", resetLink);
 
     await sendEmail(user.email, emailTemplateId.resetPassword, {
       resetLink,
@@ -349,12 +322,10 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-// Reset Password API
 const resetPassword = async (req, res) => {
   try {
     const { newPassword, confirmPassword } = req.body;
     const token = req.params.token;
-    console.log("🚀 ~ resetPassword ~ token:", token);
 
     const user = await User.findOne({
       resetPasswordToken: token,
@@ -370,7 +341,6 @@ const resetPassword = async (req, res) => {
       );
     }
 
-    // Validate passwords match
     if (newPassword !== confirmPassword) {
       return httpResponse(
         res,
@@ -380,11 +350,9 @@ const resetPassword = async (req, res) => {
       );
     }
 
-    // Hash the new password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
 
-    // Clear the reset token and expiry
     user.resetPasswordToken = "";
     user.resetPasswordExpires = "";
 
@@ -392,14 +360,12 @@ const resetPassword = async (req, res) => {
 
     return httpResponse(res, statusCode.ok, true, message.passwordUpdated);
   } catch (error) {
-    console.log("🚀 ~ resetPassword ~ error:", error.message);
     return httpResponse(res, statusCode.badRequest, false, error.message);
   }
 };
 
 const addWalletAddress = async (req, res) => {
   try {
-    console.log("🚀 ~ addWalletAddress ~ API");
     const walletAddress = req.body.walletAddress;
 
     const walletExists = await User.findOne({
@@ -426,11 +392,11 @@ const addWalletAddress = async (req, res) => {
         { user, accessToken, refreshToken }
       );
     }
-    const statusHistory = {
-      status: status.NEW,
-      timestamp: Date.now(),
-      reason: "",
-    };
+    // const statusHistory = {
+    //   status: status.NEW,
+    //   timestamp: Date.now(),
+    //   reason: "",
+    // };
 
     const investor = await User.create({
       walletAddress,
@@ -439,7 +405,7 @@ const addWalletAddress = async (req, res) => {
       isKycVerified: false,
       isActive: true,
       status: status.NEW,
-      statusHistory: statusHistory,
+      // statusHistory: statusHistory,
     });
     const accessToken = await jwtSign(
       investor,
@@ -461,7 +427,6 @@ const addWalletAddress = async (req, res) => {
       { user, accessToken, refreshToken }
     );
   } catch (error) {
-    console.log("error here ===>", error);
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
@@ -470,7 +435,6 @@ const refreshToken = async (req, res) => {
   try {
     const { refreshToken } = req.body;
     const decoded = jwt.verify(refreshToken, config.refreshTokenSecret);
-    console.log("🚀 ~ refreshToken ~ decoded:", decoded);
     const userData = await User.findById(decoded.id).exec();
     if (!userData) {
       return httpResponse(

@@ -7,7 +7,7 @@ const createSession = async (options) => {
   try {
     const {
       customerId,
-      tokensPrice,
+      amountPaid,
       currency,
       mode,
       successUrl,
@@ -16,6 +16,21 @@ const createSession = async (options) => {
       couponId,
       quantity,
     } = options;
+
+    console.log("customerId:", customerId, "Type:", typeof customerId);
+    console.log(
+      "amountPaid for 1 token :",
+      amountPaid,
+      "Type:",
+      typeof amountPaid
+    );
+    console.log("currency:", currency, "Type:", typeof currency);
+    console.log("mode:", mode, "Type:", typeof mode);
+    console.log("successUrl:", successUrl, "Type:", typeof successUrl);
+    console.log("errorUrl:", errorUrl, "Type:", typeof errorUrl);
+    console.log("metaData:", metaData, "Type:", typeof metaData);
+    console.log("couponId:", couponId, "Type:", typeof couponId);
+    console.log("quantity:", quantity, "Type:", typeof quantity);
 
     const sessionPayload = {
       mode,
@@ -32,9 +47,10 @@ const createSession = async (options) => {
             product_data: {
               name: "PRC TOKEN",
             },
-            unit_amount: tokensPrice,
+            unit_amount_decimal: amountPaid,
           },
-          quantity: quantity,
+
+          quantity: 1,
         },
       ],
       payment_intent_data: { metadata: metaData },
@@ -57,7 +73,7 @@ const createSession = async (options) => {
       userId: metaData.userId || null,
       saleId: metaData.saleId || null,
       tokenIn: quantity,
-      tokenOut: tokensPrice / 100,
+      tokenOut: amountPaid / 100,
       currency: sessionData.currency,
       email: sessionData.customer_details.email || null,
       sessionCreationTime: sessionData.created,

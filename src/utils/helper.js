@@ -4,7 +4,7 @@ const crypto = require("crypto");
 // Generate a random 6-digit OTP
 const generateOTP = async (userId, operation) => {
   const otp = crypto.randomInt(100000, 1000000);
-  const otpExpires = new Date(Date.now() + 1 * 60 * 1000);
+  const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
   const otpRecord = new Otp({
     userId,
     otp,

@@ -17,8 +17,8 @@ const auth = (req, res, next) => {
     } else {
       let accesstoken = token.split(" ");
       let decoded = jwt.verify(accesstoken[1], config.accessTokenSecret);
+      console.log("🚀 ~ auth ~ decoded:", decoded);
       req.data = decoded;
-      console.log("🚀 ~ decoded:", decoded);
       next();
     }
   } catch (err) {
@@ -32,12 +32,17 @@ const auth = (req, res, next) => {
   }
 };
 
-const isAdmin = (req, res) => {
+const isAdmin = (req, res, next) => {
   try {
     const userRole = req.data.role;
 
     if (userRole !== roles.ADMIN) {
-      throw new Error("Only Admin Can Access");
+      return httpResponse(
+        res,
+        statusCode.unAuthorized,
+        false,
+        message.userIsNotAdmin
+      );
     }
     next();
   } catch (error) {

@@ -1,3 +1,4 @@
+const Sale = require("../../models/Sale");
 const { apiResponse } = require("./common");
 
 const getInvestors = {
@@ -32,6 +33,15 @@ const getInvestors = {
         description: "Enter investorId",
         schema: {
           type: "string",
+        },
+      },
+      {
+        in: "query",
+        name: "isBlocked",
+        description: "Filter by blocked status (true/false)",
+        schema: {
+          type: "string",
+          enum: ["true", "false"],
         },
       },
     ],
@@ -250,7 +260,8 @@ const purchaseToken = {
     tags: ["sale"],
     security: [{ bearerAuth: [] }],
     summary: "Purchase token",
-    description: "Purchase token",
+    description:
+      "Initiates a token purchase process and returns a Stripe checkout session URL.",
     operationId: "purchaseToken",
     parameters: [
       {
@@ -258,13 +269,19 @@ const purchaseToken = {
         name: "purchaseToken",
         schema: {
           type: "object",
-          required: ["id", "quantity"],
+          required: ["saleId", "quantity", "amountPaid"],
           properties: {
-            id: {
+            saleId: {
               type: "string",
+              description: "The ID of the sale.",
             },
             quantity: {
-              type: "string",
+              type: "number",
+              description: "The number of tokens to purchase.",
+            },
+            amountPaid: {
+              type: "number",
+              description: "The total price of the tokens in cents.",
             },
           },
         },
@@ -704,44 +721,6 @@ const downloadPdf = {
   },
 };
 
-const updateUserStatus = {
-  patch: {
-    tags: ["Admin"],
-    security: [{ bearerAuth: [] }],
-    summary: "Update user status blocked or unblocked",
-    description: "Update user status blocked or unblocked",
-    operationId: "updateUserStatus",
-    parameters: [
-      {
-        in: "path",
-        name: "userId",
-        required: true,
-        description: "Enter user id",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "body",
-        name: "userData",
-        schema: {
-          type: "object",
-          required: ["isBlocked", "reason"],
-          properties: {
-            isBlocked: {
-              type: "boolean",
-            },
-            reason: {
-              type: "string",
-            },
-          },
-        },
-      },
-    ],
-    responses: apiResponse,
-  },
-};
-
 module.exports = {
   getInvestors,
   getInvestorInvestments,
@@ -763,5 +742,4 @@ module.exports = {
   downloadPdf,
   getSale,
   purchaseToken,
-  updateUserStatus,
 };

@@ -6,10 +6,8 @@ const { httpResponse } = require("../middleware/responseHandler");
 const { status, statusCode, message } = require("../config/constants");
 const UserActivity = require("../models/UserActivity");
 const { isCurrentUser } = require("../utils/helper");
-const PrivateAddress = require("../models/PrivateAddress");
 const RefreshTokens = require("../models/refreshToken");
 
-// update login user profile
 const updateProfile = async (req, res) => {
   try {
     const isCurrentUserLogin = await isCurrentUser(req.data.id, req.params.id);
@@ -25,9 +23,7 @@ const updateProfile = async (req, res) => {
     const { firstName, lastName, password } = req.body;
     const email = req.body?.email?.toLowerCase();
 
-    console.log("🚀 ~ updateProfile ~ email:", email);
     const user = await User.findById(req.params.id).exec();
-    console.log("🚀 ~ updateProfile ~ req.body:", req.body);
     const userData = {
       firstName: firstName || user.firstName,
       lastName: lastName || user.lastName,
@@ -63,7 +59,6 @@ const updateProfile = async (req, res) => {
     }).exec();
     const updatedUserData = { ...updatedUser._doc };
     delete updatedUserData.password;
-    console.log("🚀 ~ updateProfile ~ updatedUserData:", updatedUserData);
     return httpResponse(
       res,
       statusCode.ok,
@@ -72,7 +67,6 @@ const updateProfile = async (req, res) => {
       updatedUserData
     );
   } catch (error) {
-    console.log("error here ===>", error);
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
@@ -90,7 +84,6 @@ const addUserActivity = async (req, res) => {
       {}
     );
   } catch (error) {
-    console.log("error here ===>", error);
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
@@ -128,57 +121,16 @@ const enableMFA = async (req, res) => {
       {}
     );
   } catch (error) {
-    console.log("error here ===>", error);
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
 
-// const verifyMFA = async (req, res) => {
-//   try {
-//     const { otp } = req.body;
-//     const { id } = req.params;
-//     const user = await User.findById(id).exec();
-
-//     const isVerified = speakeasy.totp.verify({
-//       secret: user.mfaSecret,
-//       token: otp,
-//       label: "Security Code",
-//       algorithm: "sha512",
-//     });
-
-//     if (isVerified) {
-//       await User.findByIdAndUpdate(req.params.id, {
-//         isMfaEnabled: true,
-//       }).exec();
-//       return httpResponse(
-//         res,
-//         statusCode.ok,
-//         true,
-//         message.mfaVerifiedSuccess,
-//         {}
-//       );
-//     }
-//     return httpResponse(
-//       res,
-//       statusCode.badRequest,
-//       false,
-//       message.otpExpired,
-//       {}
-//     );
-//   } catch (error) {
-//     console.log("error here ===>", error);
-//     return httpResponse(res, statusCode.errorPage, false, error.message);
-//   }
-// };
-
 const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.data.id).exec();
-    console.log("🚀 ~ getUserProfile ~ user:", user);
     if (user) {
       const userData = { ...user._doc };
       delete userData.password;
-      console.log("🚀 ~ getUserProfile ~ userData:", userData);
       return httpResponse(
         res,
         statusCode.ok,
@@ -195,7 +147,6 @@ const getUserProfile = async (req, res) => {
       {}
     );
   } catch (error) {
-    console.log("error here ===>", error);
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
@@ -255,8 +206,6 @@ const changePassword = async (req, res) => {
 module.exports = {
   updateProfile,
   addUserActivity,
-  enableMFA,
-  // verifyMFA,
   getUserProfile,
   logout,
   changePassword,

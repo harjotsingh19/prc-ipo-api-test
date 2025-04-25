@@ -66,7 +66,7 @@ const handleCheckoutSessionCompleted = async (event) => {
       saleId: saleId,
       tokenIn,
       tokenOut,
-      paymentStatus: "completed",
+      paymentStatus: "Paid",
       transactionDate: new Date(),
     });
     await transaction.save();

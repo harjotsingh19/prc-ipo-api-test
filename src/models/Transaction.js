@@ -36,8 +36,8 @@ const txnSchema = new mongoose.Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ["pending", "completed", "failed"],
-      default: "pending",
+      enum: ["Pending", "Paid", "Failed"],
+      default: "Pending",
     },
     transactionDate: {
       type: Date,

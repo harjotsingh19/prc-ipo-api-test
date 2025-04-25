@@ -11,275 +11,13 @@ const {
 } = require("../config/constants");
 const { default: mongoose } = require("mongoose");
 const Transaction = require("../models/Transaction");
-const PrivateAddress = require("../models/PrivateAddress");
-const tokenVesting = require("../models/tokenVesting");
 
-const TokenClaimHistory = require("../models/TokenClaimHistory");
-const { generatePDF } = require("../utils/pdfManager");
 const moment = require("moment");
 const { sendEmail } = require("../utils/mailManager");
 
-// const getInvestors = async (req, res) => {
-//   try {
-//     const { page } = req.query;
-//     const pageSize = parseInt(req.query.pageSize);
-//     const skip = (page - 1) * pageSize;
-
-//     let condition = { role: "INVESTOR" };
-//     if (req.query.investorId) {
-//       condition = {
-//         role: "INVESTOR",
-//         _id: new mongoose.Types.ObjectId(`${req.query.investorId}`),
-//       };
-//     }
-
-//     const aggregatePipeline = [
-//       {
-//         $match: condition,
-//       },
-//       {
-//         $addFields: {
-//           userWalletAddress: { $toLower: "$walletAddress" },
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "transactions",
-//           let: { investorWalletAddress: "$userWalletAddress" },
-//           pipeline: [
-//             {
-//               $match: {
-//                 $expr: {
-//                   $eq: [{ $toLower: "$from" }, "$$investorWalletAddress"],
-//                 },
-//               },
-//             },
-//           ],
-//           as: "transactions",
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "transactions",
-//           let: { investorWalletAddress: "$userWalletAddress" },
-//           pipeline: [
-//             {
-//               $match: {
-//                 $expr: {
-//                   $eq: [{ $toLower: "$from" }, "$$investorWalletAddress"],
-//                 },
-//               },
-//             },
-//             {
-//               $group: {
-//                 _id: "$asset", // Group by asset
-//                 totalAssetAmount: { $sum: "$assetAmount" }, // Sum the assetAmount for each asset
-//               },
-//             },
-//             {
-//               $project: {
-//                 asset: "$_id",
-//                 totalAssetAmount: 1,
-//                 _id: 0,
-//               },
-//             },
-//           ],
-//           as: "groupedByAssets",
-//         },
-//       },
-//       {
-//         $addFields: {
-//           groupedByAsset: {
-//             $arrayToObject: {
-//               $map: {
-//                 input: "$groupedByAssets",
-//                 as: "summary",
-//                 in: { k: "$$summary.asset", v: "$$summary.totalAssetAmount" },
-//               },
-//             },
-//           },
-//         },
-//       },
-//       {
-//         $addFields: {
-//           totalTokensBought: {
-//             $sum: "$transactions.tokenAmount",
-//           },
-//           totalUSDValue: {
-//             $sum: "$transactions.value",
-//           },
-//         },
-//       },
-//       {
-//         $sort: { created_at: -1 },
-//       },
-//       {
-//         $project: {
-//           name: 1,
-//           onchainId: 1,
-//           walletAddress: 1,
-//           totalTokensBought: 1,
-//           totalUSDValue: 1,
-//           groupedByAsset: 1,
-//           "transactions.txnHash": 1,
-//           "transactions.value": 1,
-//           "transactions.tokenAmount": 1,
-//           "transactions.tokenPrice": 1,
-//           "transactions.saleId": 1,
-//           "transactions.created_at": 1,
-//           "transactions.assetAmount": 1,
-//           "transactions.asset": 1,
-//         },
-//       },
-//     ];
-
-//     if (!req.query.investorId) {
-//       aggregatePipeline.push({
-//         $facet: {
-//           metadata: [
-//             { $count: "totalCount" }, // Calculate total count of matching documents
-//           ],
-//           data: [
-//             { $skip: skip }, // Paginate results
-//             { $limit: pageSize }, // Limit results per page
-//           ],
-//         },
-//       });
-//       aggregatePipeline.push({
-//         $addFields: {
-//           totalCount: { $arrayElemAt: ["$metadata.totalCount", 0] }, // Extract totalCount from metadata
-//         },
-//       });
-//     }
-
-//     const investors = await User.aggregate(aggregatePipeline);
-
-//     const paginatedData =
-//       req.query.investorId && investors.length
-//         ? investors
-//         : investors[0]?.data || [];
-//     const totalCount =
-//       req.query.investorId && investors.length
-//         ? 1
-//         : investors[0]?.totalCount || 0;
-
-//     const responseData = {
-//       page,
-//       pageSize,
-//       totalCount,
-//       investors: paginatedData,
-//     };
-
-//     return httpResponse(
-//       res,
-//       statusCode.ok,
-//       true,
-//       message.allInvestorsReturned,
-//       responseData
-//     );
-//   } catch (error) {
-//     return httpResponse(res, statusCode.errorPage, false, error.message);
-//   }
-// };
-
-// const getAllInvestments = async (req, res) => {
-
-//   try {
-//     const { filter, page, saleId } = req.query;
-
-//     let pipeline = [
-//       {
-//         $lookup: {
-//           from: "sales",
-//           localField: "saleId",
-//           foreignField: "_id",
-//           as: "saleDetails",
-//         },
-//       },
-//       {
-//         $unwind: {
-//           path: "$saleDetails",
-//           preserveNullAndEmptyArrays: true,
-//         },
-//       },
-//       { $sort: { created_at: -1 } },
-//       {
-//         $project: {
-//           txnHash: 1,
-//           from: 1,
-//           value: 1,
-//           tokenAmount: 1,
-//           tokenPrice: 1,
-//           saleId: 1,
-//           asset: 1,
-//           assetAmount: 1,
-//           created_at: 1,
-//           saleDetails: 1,
-//         },
-//       },
-//     ];
-
-//     if (saleId) {
-//       pipeline.push({
-//         $match: { saleId: new mongoose.Types.ObjectId(saleId) },
-//       });
-//     }
-
-//     if (filter === "last10") {
-//       pipeline.push({ $sort: { created_at: -1 } }, { $limit: 10 });
-//     } else if (filter === "top10") {
-//       pipeline.push({ $sort: { tokenAmount: -1 } }, { $limit: 10 });
-//     } else if (page && req.query.pageSize) {
-//       const pageSize = parseInt(req.query.pageSize);
-//       const skip = (page - 1) * pageSize;
-//       pipeline.push({
-//         $facet: {
-//           metadata: [{ $count: "totalCount" }],
-//           data: [{ $skip: skip }, { $limit: pageSize }],
-//         },
-//       });
-//       pipeline.push({
-//         $addFields: {
-//           totalCount: { $arrayElemAt: ["$metadata.totalCount", 0] },
-//         },
-//       });
-
-//       const investments = await Transaction.aggregate(pipeline);
-//       const paginatedData = investments[0]?.data || [];
-//       const totalCount = investments[0]?.totalCount || 0;
-
-//       const responseData = {
-//         page,
-//         pageSize,
-//         totalCount,
-//         investments: paginatedData,
-//       };
-//       return httpResponse(
-//         res,
-//         statusCode.ok,
-//         true,
-//         message.allInvestmentsReturned,
-//         responseData
-//       );
-//     }
-
-//     const investments = await Transaction.aggregate(pipeline);
-
-//     return httpResponse(
-//       res,
-//       statusCode.ok,
-//       true,
-//       message.allInvestmentsReturned,
-//       investments
-//     );
-//   } catch (error) {
-//     return httpResponse(res, statusCode.errorPage, false, error.message);
-//   }
-// };
-
 const getInvestors = async (req, res) => {
   try {
-    const { page = 1, pageSize = 10, investorId, isBlocked } = req.query; // Extract query parameters
+    const { page = 1, pageSize = 10, investorId, isBlocked } = req.query;
     console.log(
       "🚀 ~ getInvestors ~ investorId:",
       investorId,
@@ -287,35 +25,31 @@ const getInvestors = async (req, res) => {
       isBlocked
     );
 
-    console.log("isBlocked: ", isBlocked, typeof isBlocked);
-
-    const skip = (page - 1) * pageSize; // Calculate the number of documents to skip for pagination
+    const skip = (page - 1) * pageSize;
 
     // Define the base condition to filter only investors
-    let condition = { role: "INVESTOR", isEmailVerified: true }; // Ensure isEmailVerified is always true
+    let condition = { role: "INVESTOR", isEmailVerified: true };
 
-    // If an investorId is provided, filter by that specific investor
     if (investorId) {
       condition._id = new mongoose.Types.ObjectId(`${investorId}`);
     }
 
-    // If isBlocked is provided, filter by blocked or non-blocked status
     if (isBlocked !== undefined) {
-      condition.isBlocked = isBlocked === "true"; // Convert string to boolean
+      condition.isBlocked = isBlocked === "true";
     }
 
-    console.log("isBlocked: ", isBlocked, typeof isBlocked);
+    console.log("condition ", condition);
 
     const aggregatePipeline = [
       {
-        $match: condition, // Match investors based on the condition
+        $match: condition,
       },
       {
         $lookup: {
-          from: "transactions", // Join with the Transaction collection
-          localField: "_id", // Field in the User collection
-          foreignField: "userId", // Field in the Transaction collection
-          as: "transactions", // Alias for the joined data
+          from: "transactions",
+          localField: "_id",
+          foreignField: "userId",
+          as: "transactions",
         },
       },
       {
@@ -325,23 +59,23 @@ const getInvestors = async (req, res) => {
               $map: {
                 input: "$transactions.tokenIn", // Map over tokenIn values
                 as: "token",
-                in: { $toDouble: "$$token" }, // Convert tokenIn to a numeric value
+                in: { $toDouble: "$$token" },
               },
             },
           },
           tokenOut: {
             $sum: {
               $map: {
-                input: "$transactions.tokenOut", // Map over tokenOut values
+                input: "$transactions.tokenOut",
                 as: "usd",
-                in: { $toDouble: "$$usd" }, // Convert tokenOut to a numeric value
+                in: { $toDouble: "$$usd" },
               },
             },
           },
         },
       },
       {
-        $sort: { created_at: -1 }, // Sort by creation date in descending order
+        $sort: { created_at: -1 },
       },
       {
         $project: {
@@ -349,7 +83,7 @@ const getInvestors = async (req, res) => {
           lastName: 1,
           email: 1,
           walletAddress: 1,
-          isBlocked: 1, // Include the isBlocked field in the response
+          isBlocked: 1,
           tokenIn: 1,
           tokenOut: 1,
           "transactions.paymentId": 1,
@@ -361,43 +95,41 @@ const getInvestors = async (req, res) => {
       },
     ];
 
-    // If no specific investorId is provided, apply pagination
     if (!investorId) {
       aggregatePipeline.push({
         $facet: {
-          metadata: [
-            { $count: "totalCount" }, // Count the total number of matching documents
-          ],
-          data: [
-            { $skip: skip }, // Skip documents for pagination
-            { $limit: parseInt(pageSize) }, // Limit the number of documents per page
-          ],
+          metadata: [{ $count: "totalCount" }],
+          data: [{ $skip: skip }, { $limit: parseInt(pageSize) }],
         },
       });
       aggregatePipeline.push({
         $addFields: {
-          totalCount: { $arrayElemAt: ["$metadata.totalCount", 0] }, // Extract totalCount from metadata
+          totalCount: { $arrayElemAt: ["$metadata.totalCount", 0] },
         },
       });
     }
 
-    // Execute the aggregation pipeline
     const investors = await User.aggregate(aggregatePipeline).exec();
 
-    // Prepare the response data
-    const paginatedData =
-      investorId && investors.length ? investors : investors[0]?.data || [];
-    const totalCount =
-      investorId && investors.length ? 1 : investors[0]?.totalCount || 0;
+    let responseData;
+    if (investorId && investors.length) {
+      responseData = {
+        page: parseInt(page),
+        pageSize: parseInt(pageSize),
+        totalCount: 1,
+        investor: investors[0],
+      };
+    } else {
+      const paginatedData = investors[0]?.data || [];
+      const totalCount = investors[0]?.totalCount || 0;
+      responseData = {
+        page: parseInt(page),
+        pageSize: parseInt(pageSize),
+        totalCount,
+        investors: paginatedData,
+      };
+    }
 
-    const responseData = {
-      page: parseInt(page),
-      pageSize: parseInt(pageSize),
-      totalCount,
-      investors: paginatedData,
-    };
-
-    // Send the response
     return httpResponse(
       res,
       statusCode.ok,
@@ -406,7 +138,6 @@ const getInvestors = async (req, res) => {
       responseData
     );
   } catch (error) {
-    // Handle any errors that occur during execution
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
@@ -1747,26 +1478,14 @@ const updateUserStatus = async (req, res) => {
         {}
       );
     }
-    let statusData;
     let responseMessage;
     if (userData.isBlocked) {
-      statusData = {
-        status: "BLOCKED",
-        timestamp: Date.now(),
-        reason: userData.reason,
-      };
-      responseMessage = message.profileUpdateSuccess;
+      responseMessage = message.userBlockSuccess;
+      user.isBlocked = true;
     } else if (!userData.isBlocked) {
-      statusData = {
-        status: "UNBLOCKED",
-        timestamp: Date.now(),
-        reason: userData.reason,
-      };
-      responseMessage = message.profileUpdateSuccess;
+      responseMessage = message.userUnblockSuccess;
+      user.isBlocked = false;
     }
-    user.isBlocked = userData?.isBlocked || user.isBlocked;
-    user.statusHistory.push(statusData);
-    user.status = statusData.status;
 
     await user.save();
 
