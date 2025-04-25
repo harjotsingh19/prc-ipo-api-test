@@ -104,6 +104,7 @@ const message = {
   // Token
   tokenDetailsReturned: "Token details returned",
   tokenCreated: "Token created successfully",
+  tooManyRequests: "Too many requests from this IP. Please try after some time",
   icoFinalizedSuccess: "ICO finalized successfully",
   tokenDocumentNotFound: "Token document not found.",
   tokensCreditedSuccessfully: "Tokens credited successfully.",
@@ -153,6 +154,7 @@ const statusCode = {
   noContent: 204,
   forbidden: 403,
   errorPage: 404,
+  tooManyRequest: 429,
   serverError: 500,
 };
 
