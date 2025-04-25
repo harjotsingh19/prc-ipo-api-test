@@ -389,13 +389,12 @@ const createSale = async (req, res) => {
       );
     }
 
-    // await Sale.updateMany({ active: true }, { active: false });
     const sale = await Sale.create({
       name: normalizedName,
       startTime,
       endTime,
       tokenPrice,
-      active: true,
+      active: false,
     });
     return httpResponse(res, statusCode.ok, true, message.saleCreated, sale);
   } catch (error) {
