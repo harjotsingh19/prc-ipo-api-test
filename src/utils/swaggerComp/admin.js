@@ -742,6 +742,53 @@ const getTransactions = {
     responses: apiResponse,
   },
 };
+const getAirdrop = {
+  get: {
+    tags: ["Admin"],
+    security: [{ bearerAuth: [] }],
+    summary: "Get Sale Air drop listing",
+    description: "Get Sale Air drop listing",
+    operationId: "getAllSaleAirdrop",
+    parameters: [
+      {
+        in: "path",
+        name: "id",
+        required: true,
+        description: "Enter sale Id",
+        schema: {
+          type: "string",
+        },
+      },
+      {
+        in: "query",
+        name: "page",
+        required: true,
+        description: "Enter page number",
+        schema: {
+          type: "string",
+        },
+      },
+      {
+        in: "query",
+        name: "pageSize",
+        required: true,
+        description: "Enter page size",
+        schema: {
+          type: "string",
+        },
+      },
+      {
+        in: "query",
+        name: "status",
+        schema: {
+          type: "string",
+        },
+        description: "The Status you have selected is Invalid.",
+      },
+    ],
+    responses: apiResponse,
+  },
+};
 
 module.exports = {
   getInvestors,
@@ -765,4 +812,5 @@ module.exports = {
   getSale,
   purchaseToken,
   getTransactions,
+  getAirdrop,
 };

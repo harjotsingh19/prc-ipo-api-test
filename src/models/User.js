@@ -105,9 +105,6 @@ const userSchema = new mongoose.Schema(
     customerStripeId: {
       type: String,
     },
-    walletAddress: {
-      type: String,
-    },
     // kycStatus: {
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }

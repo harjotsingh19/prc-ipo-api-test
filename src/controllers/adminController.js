@@ -1601,6 +1601,108 @@ const transactions = async (req, res) => {
   }
 };
 
+const getSalesAirDropTransactions = async (req, res) => {
+  try {
+    const { page } = req.query;
+    const pageSize = parseInt(req.query.pageSize);
+    const saleId = req.params.id;
+
+    const skip = (page - 1) * pageSize;
+    let whereClause = {
+      saleId: new ObjectId(saleId),
+      paymentStatus: "Paid",
+      paymentTokenOutStatus: false,
+    };
+
+    const transactionsData = await Transaction.aggregate([
+      { $match: whereClause },
+      {
+        $lookup: {
+          from: "users",
+          localField: "transactions.userId",
+          foreignField: "_id",
+          as: "transactions.userDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$transactions.userDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "sales",
+          localField: "transactions.saleId",
+          foreignField: "_id",
+          as: "transactions.saleDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$transactions.saleDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          "transactions._id": 1,
+          "transactions.paymentId": 1,
+          "transactions.tokenOut": 1,
+          "transactions.tokenIn": 1,
+          "transactions.paymentStatus": 1,
+          "transactions.saleId": 1,
+          "transactions.created_at": 1,
+          "transactions.saleDetails._id": 1,
+          "transactions.saleDetails.name": 1,
+          "transactions.saleDetails.startTime": 1,
+          "transactions.saleDetails.endTime": 1,
+          "transactions.saleDetails.tokenPrice": 1,
+          "transactions.userDetails._id": 1,
+          "transactions.userDetails.email": 1,
+          "transactions.userDetails.lastName": 1,
+          "transactions.userDetails.firstName": 1,
+          "transactions.userDetails.walletAddress": 1,
+        },
+      },
+      { $skip: skip }, // 👈 Pagination: Skip X documents
+      { $limit: pageSize }, // 👈 Pagination: Limit to pageSize
+    ]);
+
+    // 4. Optional total count for frontend
+    const totalTransactions = await Transaction.countDocuments(
+      condition
+    ).exec();
+
+    const responseData = {
+      page,
+      pageSize,
+      totalTransactions,
+      transactionsData,
+    };
+
+    if (filterStatus === true) {
+      return httpResponse(
+        res,
+        statusCode.ok,
+        true,
+        message.SaleDataReturned,
+        responseData
+      );
+    }
+    return httpResponse(
+      res,
+      statusCode.ok,
+      true,
+      message.allSalesReturned,
+      responseData
+    );
+  } catch (error) {
+    console.log("error: ", error);
+    return httpResponse(res, statusCode.errorPage, false, error.message);
+  }
+};
+
 module.exports = {
   setAdminAddress,
   getInvestors,
@@ -1623,4 +1725,5 @@ module.exports = {
   getClaimTokenHistory,
   downloadInvestments,
   transactions,
+  getSalesAirDropTransactions,
 };

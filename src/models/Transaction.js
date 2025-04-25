@@ -39,6 +39,10 @@ const txnSchema = new mongoose.Schema(
       enum: ["pending", "completed", "failed"],
       default: "pending",
     },
+    paymentTokenOutStatus: {
+      type: Boolean,
+      default: false,
+    },
     paymentType: {
       type: String, // e.g., 'credit card', 'debit card', 'bank transfer', etc.
     },
