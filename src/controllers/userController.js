@@ -250,6 +250,60 @@ const changePassword = async (req, res) => {
   }
 };
 
+const addWallet = async (req, res) => {
+  try {
+    const { walletAddress } = req.body;
+    const userData = await User.findById(req.data.id);
+
+    if (!userData) {
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.userDoesnotExists
+      );
+    }
+
+    const checkUserWallet = await User.findOne({
+      walletAddress: walletAddress.toLowerCase(),
+    });
+
+    if (checkUserWallet) {
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.walletAddressAlreadyExists
+      );
+    }
+
+    const addWalletData = await User.updateOne(
+      { _id: userData._id },
+      { walletAddress: walletAddress.toLowerCase() }
+    );
+
+    if (addWalletData) {
+      return httpResponse(
+        res,
+        statusCode.ok,
+        true,
+        message.walletAddressAddedSuccessfully,
+        {}
+      );
+    }
+
+    return httpResponse(
+      res,
+      statusCode.badRequest,
+      true,
+      message.errorAddingWallet,
+      {}
+    );
+  } catch (error) {
+    return httpResponse(res, statusCode.errorPage, false, error.message);
+  }
+};
+
 module.exports = {
   updateProfile,
   addUserActivity,
@@ -258,4 +312,5 @@ module.exports = {
   getUserProfile,
   logout,
   changePassword,
+  addWallet,
 };

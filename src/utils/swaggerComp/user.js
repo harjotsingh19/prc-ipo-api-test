@@ -202,6 +202,32 @@ const changePassword = {
   },
 };
 
+const addWallet = {
+  put: {
+    tags: ["User"],
+    security: [{ bearerAuth: [] }],
+    summary: "Add user wallet address",
+    description: "Add user wallet address",
+    operationId: "addWallet",
+    parameters: [
+      {
+        in: "body",
+        name: "addWalletData",
+        schema: {
+          type: "object",
+          required: ["walletAddress"],
+          properties: {
+            walletAddress: {
+              type: "string",
+            },
+          },
+        },
+      },
+    ],
+    responses: apiResponse,
+  },
+};
+
 module.exports = {
   enableMFA,
   verifyMFA,
@@ -210,4 +236,5 @@ module.exports = {
   getUserProfile,
   logout,
   changePassword,
+  addWallet,
 };
