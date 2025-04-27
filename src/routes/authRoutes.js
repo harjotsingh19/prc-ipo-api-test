@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController.js");
-// const authValidator = require('../validators/userValidator.js');
 const authValidator = require("../utils/validators/auth");
 const validator = new authValidator();
 const upload = require("../utils/multer");
@@ -48,7 +47,6 @@ router.put(
   validator.result,
   authController.resetPassword
 );
-// router.post("/addWalletAddress", docUpload, authController.addWalletAddress);
 router.post(
   "/refresh-token",
   validator.validateRefreshToken(),

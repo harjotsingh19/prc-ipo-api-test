@@ -355,7 +355,6 @@ class Validator {
       console.log("errors are not empty ");
 
       errors.array().forEach((err) => console.log("err", err));
-      // return response.HttpResponse(res, statusCode.badRequest, responseStatus.failure, message.validationError, errors.array());
       return response.httpResponse(
         res,
         statusCode.badRequest,
@@ -368,6 +367,5 @@ class Validator {
     }
   }
 }
-// export default Validator;
 
 module.exports = Validator;

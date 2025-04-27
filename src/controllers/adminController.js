@@ -27,7 +27,6 @@ const getInvestors = async (req, res) => {
 
     const skip = (page - 1) * pageSize;
 
-    // Define the base condition to filter only investors
     let condition = { role: "INVESTOR", isEmailVerified: true };
 
     if (investorId) {
@@ -57,7 +56,7 @@ const getInvestors = async (req, res) => {
           tokenIn: {
             $sum: {
               $map: {
-                input: "$transactions.tokenIn", // Map over tokenIn values
+                input: "$transactions.tokenIn",
                 as: "token",
                 in: { $toDouble: "$$token" },
               },
@@ -74,9 +73,9 @@ const getInvestors = async (req, res) => {
           },
         },
       },
-      {
-        $sort: { created_at: -1 },
-      },
+      // {
+      //   $sort: { created_at: -1 },
+      // },
       {
         $project: {
           firstName: 1,
@@ -256,6 +255,7 @@ const getInvestmentDetails = async (req, res) => {
   try {
     const { id } = req.params; // Extract transaction ID from request parameters
     const transactionId = id; // Assign the transaction ID
+    console.log("🚀 ~ getInvestmentDetails ~ transactionId:", transactionId);
 
     if (!transactionId) {
       return httpResponse(
@@ -322,7 +322,7 @@ const getInvestmentDetails = async (req, res) => {
     if (!transactionDetails.length) {
       return httpResponse(
         res,
-        statusCode.notFound,
+        statusCode.badRequest,
         false,
         message.transactionNotFound
       );
@@ -408,9 +408,11 @@ const createSale = async (req, res) => {
       );
     }
 
-    const normalizedName = name.trim().toLowerCase();
+    // const normalizedName = name.trim().toLowerCase();
 
-    const existingSale = await Sale.findOne({ name: normalizedName }).exec();
+    // const existingSale = await Sale.findOne({ name: normalizedName }).exec();
+    const existingSale = await Sale.findOne({ name }).exec();
+
     if (existingSale) {
       return httpResponse(
         res,
@@ -421,7 +423,7 @@ const createSale = async (req, res) => {
     }
 
     const sale = await Sale.create({
-      name: normalizedName,
+      name,
       startTime,
       endTime,
       tokenPrice,
@@ -433,109 +435,10 @@ const createSale = async (req, res) => {
   }
 };
 
-const getSalesOld = async (req, res) => {
-  try {
-    const { page } = req.query;
-    const pageSize = parseInt(req.query.pageSize);
-
-    const skip = (page - 1) * pageSize;
-
-    let pipeline = [
-      {
-        $lookup: {
-          from: "transactions",
-          localField: "_id",
-          foreignField: "saleId",
-          as: "transactionDetails",
-        },
-      },
-      {
-        $lookup: {
-          from: "tokenvestings",
-          localField: "transactionDetails._id",
-          foreignField: "txnId",
-          as: "tokenVestingsDetails",
-        },
-      },
-      {
-        $unwind: {
-          path: "$tokenVestingsDetails",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $group: {
-          _id: "$_id",
-          saleDetails: { $first: "$$ROOT" },
-          totalClaimedTokens: {
-            $sum: { $ifNull: ["$tokenVestingsDetails.claimedTokens", 0] },
-          },
-          totalUnclaimedTokens: {
-            $sum: { $ifNull: ["$tokenVestingsDetails.unclaimedTokens", 0] },
-          },
-          totalLockedTokens: {
-            $sum: { $ifNull: ["$tokenVestingsDetails.lockedTokens", 0] },
-          },
-        },
-      },
-      {
-        $addFields: {
-          "saleDetails.distributionAnalytics": {
-            totalClaimedTokens: "$totalClaimedTokens",
-            totalUnclaimedTokens: "$totalUnclaimedTokens",
-            totalLockedTokens: "$totalLockedTokens",
-          },
-        },
-      },
-      {
-        $replaceRoot: {
-          newRoot: "$saleDetails",
-        },
-      },
-      { $sort: { created_at: -1 } },
-      {
-        $project: {
-          tokenVestingsDetails: 0,
-          transactionDetails: 0,
-        },
-      },
-      {
-        $facet: {
-          metadata: [{ $count: "totalCount" }],
-          data: [{ $skip: skip }, { $limit: pageSize }],
-        },
-      },
-      {
-        $addFields: {
-          totalCount: { $arrayElemAt: ["$metadata.totalCount", 0] },
-        },
-      },
-    ];
-
-    const sales = await Sale.aggregate(pipeline).exec();
-    const paginatedData = sales[0]?.data || [];
-    const totalCount = sales[0]?.totalCount || 0;
-
-    const responseData = {
-      page,
-      pageSize,
-      totalCount,
-      sales: paginatedData,
-    };
-    return httpResponse(
-      res,
-      statusCode.ok,
-      true,
-      message.allSalesReturned,
-      responseData
-    );
-  } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
-  }
-};
-
 const getSales = async (req, res) => {
   try {
+    console.log("get sales");
+
     const { page } = req.query;
     const pageSize = parseInt(req.query.pageSize);
 
@@ -624,108 +527,6 @@ const getSale = async (req, res) => {
     }
   } catch (error) {
     console.log("error: ", error);
-    return httpResponse(res, statusCode.errorPage, false, error.message);
-  }
-};
-
-const getTokenDetails = async (req, res) => {
-  try {
-    const token = await Token.findOne({}).exec();
-    return httpResponse(
-      res,
-      statusCode.ok,
-      true,
-      message.tokenDetailsReturned,
-      token
-    );
-  } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
-  }
-};
-
-const createToken = async (req, res) => {
-  try {
-    const payload = req.body;
-    const token = await Token.create({ ...payload });
-    return httpResponse(res, statusCode.ok, true, message.tokenCreated, token);
-  } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
-  }
-};
-
-const getAllAddressWhitelist = async (req, res) => {
-  try {
-    const { page } = req.query;
-    const pageSize = parseInt(req.query.pageSize);
-    const skip = (page - 1) * pageSize;
-
-    const whitelistAddressList = await PrivateAddress.find()
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(pageSize)
-      .exec();
-    const totalCount = await PrivateAddress.countDocuments().exec();
-    const responseData = {
-      page,
-      pageSize,
-      totalCount,
-      whitelistAddressList,
-    };
-    if (totalCount) {
-      return httpResponse(
-        res,
-        statusCode.ok,
-        true,
-        message.fetchWhitelistAddressSuccess,
-        responseData
-      );
-    }
-    return httpResponse(
-      res,
-      statusCode.ok,
-      false,
-      message.noRecordFound,
-      responseData
-    );
-  } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
-  }
-};
-
-const getAllAddressBlacklist = async (req, res) => {
-  try {
-    const { page } = req.query;
-    const pageSize = parseInt(req.query.pageSize);
-    const skip = (page - 1) * pageSize;
-
-    const blacklistAddressList = await BlacklistAddress.find()
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(pageSize);
-    const totalCount = await BlacklistAddress.countDocuments();
-    const responseData = {
-      page,
-      pageSize,
-      totalCount,
-      blacklistAddressList,
-    };
-    if (totalCount) {
-      return httpResponse(
-        res,
-        statusCode.ok,
-        true,
-        message.fetchBlacklistAddressSuccess,
-        responseData
-      );
-    }
-    return httpResponse(
-      res,
-      statusCode.ok,
-      false,
-      message.noRecordFound,
-      responseData
-    );
-  } catch (error) {
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
@@ -948,154 +749,6 @@ const getSaleStatistics = async (req, res) => {
   }
 };
 
-const getUserAnalytics = async (req, res) => {
-  try {
-    const userId = new mongoose.Types.ObjectId(`${req.params.userId}`);
-    const user = await User.findById(userId).exec();
-    const condition = { role: "INVESTOR", _id: userId };
-    if (!user) {
-      return httpResponse(
-        res,
-        statusCode.badRequest,
-        false,
-        message.userDoesnotExists,
-        {}
-      );
-    }
-    const aggregatePipeline = [
-      {
-        $match: condition,
-      },
-      {
-        $addFields: {
-          userWalletAddress: { $toLower: "$walletAddress" },
-        },
-      },
-      {
-        $lookup: {
-          from: "transactions",
-          let: { userWalletAddress: "$userWalletAddress" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: [{ $toLower: "$from" }, "$$userWalletAddress"],
-                },
-              },
-            },
-          ],
-          as: "transactions",
-        },
-      },
-      {
-        $lookup: {
-          from: "transactions",
-          let: { userWalletAddress: "$userWalletAddress" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: [{ $toLower: "$from" }, "$$userWalletAddress"],
-                },
-              },
-            },
-            {
-              $group: {
-                _id: "$asset",
-                totalAssetAmount: { $sum: "$assetAmount" },
-              },
-            },
-            {
-              $project: {
-                asset: "$_id",
-                totalAssetAmount: 1,
-                _id: 0,
-              },
-            },
-          ],
-          as: "groupedByAsset",
-        },
-      },
-      {
-        $addFields: {
-          groupedByTotalAssetAmount: {
-            $arrayToObject: {
-              $map: {
-                input: "$groupedByAsset",
-                as: "summary",
-                in: { k: "$$summary.asset", v: "$$summary.totalAssetAmount" },
-              },
-            },
-          },
-        },
-      },
-      {
-        $addFields: {
-          totalTokensBought: { $sum: "$transactions.tokenAmount" },
-          totalInvestments: { $size: "$transactions" },
-        },
-      },
-      {
-        $project: {
-          groupedByTotalAssetAmount: 1,
-          totalTokensBought: 1,
-          totalInvestments: 1,
-        },
-      },
-    ];
-
-    const userAnalytics = await User.aggregate(aggregatePipeline).exec();
-    const responseData = {
-      groupedByTotalAssetAmount: {},
-      totalTokensBought: 0,
-      totalInvestments: 0,
-    };
-    const distributionAnalytics = {
-      totalClaimedTokens: 0,
-      totalUnclaimedTokens: 0,
-      totalTokens: 0,
-    };
-    const saleCount = Number(await rvaContract.methods.saleCount().call());
-
-    for (let i = 1; i <= saleCount; i++) {
-      const vestingData = await vestingContract.methods
-        .getVestingDetails(i, user.walletAddress)
-        .call();
-      distributionAnalytics.totalClaimedTokens += Number(
-        vestingData._claimedAmount
-      );
-      distributionAnalytics.totalTokens += Number(vestingData._totalAmount);
-    }
-    distributionAnalytics.totalUnclaimedTokens =
-      distributionAnalytics.totalTokens -
-      distributionAnalytics.totalClaimedTokens;
-    responseData.distributionAnalytics = distributionAnalytics;
-
-    if (userAnalytics.length) {
-      responseData.groupedByTotalAssetAmount =
-        userAnalytics[0]?.groupedByTotalAssetAmount || {};
-      responseData.totalTokensBought = userAnalytics[0]?.totalTokensBought || 0;
-      responseData.totalInvestments = userAnalytics[0]?.totalInvestments || 0;
-      return httpResponse(
-        res,
-        statusCode.ok,
-        true,
-        message.userAnalyticsFetchSuccess,
-        responseData
-      );
-    }
-    return httpResponse(
-      res,
-      statusCode.ok,
-      false,
-      message.noRecordFound,
-      responseData
-    );
-  } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
-  }
-};
-
 const dashboard = async (req, res) => {
   try {
     const totalInvestors = await User.countDocuments({
@@ -1114,9 +767,7 @@ const dashboard = async (req, res) => {
     const token = await Token.findOne();
     if (token) {
       totalFundRaised = token?.fundsRaised;
-      // distributionAnalytics.totalTokens = token?.totalSupply;
       distributionAnalytics.totalClaimedTokens = token?.claimedTokens;
-      // distributionAnalytics.totalUnclaimedTokens = token?.availableTokens;
     }
 
     const responseData = {
@@ -1137,288 +788,6 @@ const dashboard = async (req, res) => {
   }
 };
 
-const getDistributionAnalytics = async (req, res) => {
-  try {
-    const { saleId } = req.params;
-    const tokenAnalytics = await Transaction.aggregate([
-      {
-        $match: {
-          saleId: new mongoose.Types.ObjectId(`${saleId}`),
-        },
-      },
-      {
-        $lookup: {
-          from: "tokenvestings",
-          localField: "_id",
-          foreignField: "txnId",
-          as: "tokenVestingsDetails",
-        },
-      },
-      {
-        $unwind: {
-          path: "$tokenVestingsDetails",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalClaimedTokens: { $sum: "$tokenVestingsDetails.claimedTokens" },
-          totalUnclaimedTokens: {
-            $sum: "$tokenVestingsDetails.unclaimedTokens",
-          },
-          totalLockedTokens: { $sum: "$tokenVestingsDetails.lockedTokens" },
-        },
-      },
-    ]).exec();
-    const responseData = {
-      totalClaimedTokens: 0,
-      totalUnclaimedTokens: 0,
-      totalLockedTokens: 0,
-    };
-    if (!tokenAnalytics.length) {
-      return httpResponse(
-        res,
-        statusCode.ok,
-        false,
-        message.noRecordFound,
-        responseData
-      );
-    }
-    responseData.totalClaimedTokens =
-      tokenAnalytics[0]?.totalClaimedTokens || 0;
-    responseData.totalUnclaimedTokens =
-      tokenAnalytics[0]?.totalUnclaimedTokens || 0;
-    responseData.totalLockedTokens = tokenAnalytics[0]?.totalLockedTokens || 0;
-
-    return httpResponse(
-      res,
-      statusCode.ok,
-      true,
-      message.distributionAnalyticsFetchSuccess,
-      responseData
-    );
-  } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
-  }
-};
-
-const updateInvestorKycStatus = async (req, res) => {
-  try {
-    const { status, reason } = req.body;
-    const investorId = new mongoose.Types.ObjectId(`${req.params.userId}`);
-    const investor = await User.findById(investorId).exec();
-    const statusHistory = {
-      status: investor.status,
-      timestamp: Date.now(),
-      reason: "",
-    };
-    let isKycVerified;
-    let isKycRejected;
-    let reviewStatus;
-    const rejectionReason = reason || null;
-    if (status === userStatus.KYC_SUCCESS) {
-      isKycVerified = true;
-      isKycRejected = false;
-      reviewStatus = "approved";
-      const isVerified = await verifyKyc(investor.walletAddress);
-      if (isVerified) {
-        await PrivateAddress.deleteOne({
-          walletAddress: {
-            $regex: `^${investor.walletAddress}$`,
-            $options: "i",
-          },
-        }).exec();
-        await BlacklistAddress.deleteOne({
-          walletAddress: {
-            $regex: `^${investor.walletAddress}$`,
-            $options: "i",
-          },
-        });
-      } else {
-        return httpResponse(
-          res,
-          statusCode.badRequest,
-          false,
-          message.kycStatusUpdateError,
-          {}
-        );
-      }
-      await sendEmail(investor.email, emailTemplateId.investorKycSuccess, {
-        user_name: investor.name,
-      });
-    } else if (status === userStatus.KYC_REJECTED) {
-      isKycVerified = false;
-      isKycRejected = true;
-      reviewStatus = "rejected";
-      await sendEmail(investor.email, emailTemplateId.investorKycReject, {
-        user_name: investor.name,
-        reject_reason: rejectionReason,
-      });
-    }
-    await User.updateOne(
-      { _id: investorId },
-      {
-        $push: { statusHistory: statusHistory },
-        $set: { status, isKycVerified, isKycRejected },
-      }
-    ).exec();
-    await Kyc.updateMany(
-      { userId: investorId, isLatest: true },
-      { isKycVerified, rejectionReason, reviewStatus, lastUpdated: new Date() }
-    );
-    return httpResponse(res, statusCode.ok, true, message.kycStatusUpdated, {});
-  } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
-  }
-};
-
-const updateInvestorOnchainId = async (req, res) => {
-  try {
-    const investorId = new mongoose.Types.ObjectId(`${req.params.userId}`);
-    const investor = await User.findById(investorId);
-    if (!investor) {
-      return httpResponse(
-        res,
-        statusCode.badRequest,
-        false,
-        message.userDoesnotExists,
-        {}
-      );
-    }
-    if (!investor.isKycVerified) {
-      return httpResponse(
-        res,
-        statusCode.badRequest,
-        false,
-        message.kycNotVerified,
-        {}
-      );
-    }
-    const { onchainId } = req.body;
-    await User.findByIdAndUpdate(investorId, {
-      onchainId,
-    }).exec();
-    return httpResponse(res, statusCode.ok, true, message.onchainIdUpdated, {});
-  } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
-  }
-};
-
-const getClaimTokenHistory = async (req, res) => {
-  try {
-    const { page, investorAddress } = req.query;
-    const pageSize = parseInt(req.query.pageSize);
-    const skip = (page - 1) * pageSize;
-    const query = {};
-    if (investorAddress) {
-      query.investorAddress = { $regex: `^${investorAddress}$`, $options: "i" };
-    }
-    const claimTokenHistory = await TokenClaimHistory.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(pageSize)
-      .exec();
-    const totalCount = TokenClaimHistory.countDocuments();
-    const responseData = {
-      page,
-      pageSize,
-      totalCount,
-      claimTokenHistory,
-    };
-    if (totalCount) {
-      return httpResponse(
-        res,
-        statusCode.ok,
-        true,
-        message.fetchTokenClaimHistorySuccess,
-        responseData
-      );
-    }
-    return httpResponse(
-      res,
-      statusCode.ok,
-      false,
-      message.noRecordFound,
-      responseData
-    );
-  } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
-  }
-};
-
-const PRECISION_18 = 1e18;
-const ECT_PRICE_MULTIPLIER = 1e18;
-const txHashMaxLength = 12;
-const formatTxHash = (txHash) => {
-  const hash = String(txHash);
-  if (hash.length <= txHashMaxLength) return hash;
-  return `${hash.slice(0, 6)}...${hash.slice(-4)}`;
-};
-
-const formatAssetAmount = (assetAmount, asset) => {
-  let assetAmountFormatted = (Number(assetAmount) / PRECISION_18).toFixed(5);
-  if (asset === "BNB") {
-    assetAmountFormatted = (Number(assetAmount) / PRECISION_18).toFixed(18);
-  }
-  return `${assetAmountFormatted} ${asset}`;
-};
-
-const downloadInvestments = async (req, res) => {
-  try {
-    const investmentPipeline = [
-      { $sort: { created_at: -1 } },
-      {
-        $project: {
-          txnHash: 1,
-          from: 1,
-          value: 1,
-          tokenAmount: 1,
-          tokenPrice: 1,
-          saleId: 1,
-          asset: 1,
-          assetAmount: 1,
-          created_at: 1,
-        },
-      },
-    ];
-    const transactions = await Transaction.aggregate(investmentPipeline).exec();
-    const headers = [
-      "Tx Hash",
-      "Tokens Bought With",
-      "Token Amount",
-      "Token Price",
-      "Time",
-    ];
-
-    const rows = transactions.map((transaction) => ({
-      ["Tx Hash"]: formatTxHash(transaction.txnHash),
-      ["Tokens Bought With"]: formatAssetAmount(
-        transaction.assetAmount,
-        transaction.asset
-      ),
-      ["Token Amount"]: transaction.tokenAmount / ECT_PRICE_MULTIPLIER,
-      ["Token Price"]: `$${transaction.tokenPrice / ECT_PRICE_MULTIPLIER}`,
-      ["Time"]: moment(transaction.created_at).format("DD/MM/YYYY, HH:mm:ss"),
-    }));
-    await Promise.all(rows);
-    const pdfBuffer = generatePDF({
-      headers,
-      rows,
-      title: "Investments Transaction",
-    });
-
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      'attachment; filename="InvestmentsTransactions.pdf"'
-    );
-    res.send(Buffer.from(pdfBuffer));
-  } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
-  }
-};
-
 const updateUserStatus = async (req, res) => {
   try {
     const adminCheck = await isAdmin(req.data.role);
@@ -1433,6 +802,7 @@ const updateUserStatus = async (req, res) => {
     }
     const userId = req.params.id;
     const user = await User.findById(userId);
+    console.log("🚀 ~ updateUserStatus ~ user:", user);
     if (!user) {
       return httpResponse(
         res,
@@ -1444,7 +814,14 @@ const updateUserStatus = async (req, res) => {
     }
 
     const userData = req.body;
-    if (userData?.isBlocked == user.isBlocked) {
+
+    let incomingIsBlocked = userData?.isBlocked;
+
+    if (typeof incomingIsBlocked === "string") {
+      incomingIsBlocked = incomingIsBlocked === "true";
+    }
+
+    if (incomingIsBlocked === user.isBlocked) {
       return httpResponse(
         res,
         statusCode.badRequest,
@@ -1453,11 +830,12 @@ const updateUserStatus = async (req, res) => {
         {}
       );
     }
+
     let responseMessage;
-    if (userData.isBlocked) {
+    if (incomingIsBlocked) {
       responseMessage = message.userBlockSuccess;
       user.isBlocked = true;
-    } else if (!userData.isBlocked) {
+    } else if (!incomingIsBlocked) {
       responseMessage = message.userUnblockSuccess;
       user.isBlocked = false;
     }
@@ -1634,21 +1012,10 @@ module.exports = {
   createSale,
   getSales,
   getSale,
-  getTokenDetails,
-  createToken,
-  getAllAddressWhitelist,
   getOneInvestorAllInvestments,
   getSaleStatistics,
-  getUserAnalytics,
   dashboard,
-  getDistributionAnalytics,
-  updateInvestorKycStatus,
-  getAllAddressBlacklist,
-  updateInvestorOnchainId,
-  getClaimTokenHistory,
-  downloadInvestments,
   updateUserStatus,
-  transactions,
   transactions,
   getSalesAirDropTransactions,
   updateSalesAirDropTransactions,

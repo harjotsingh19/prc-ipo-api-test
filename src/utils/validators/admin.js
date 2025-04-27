@@ -16,6 +16,14 @@ exports.result = (req, res, next) => {
   next();
 };
 
+exports.handleInvestorQuery = (req, res, next) => {
+  if (req.query.investorId) {
+    req.query.page = "1";
+    req.query.pageSize = "10";
+  }
+  next();
+};
+
 exports.validateInvestorsList = [
   check("page").trim().notEmpty().bail().withMessage("Page is required."),
   check("pageSize")
@@ -76,7 +84,7 @@ exports.validateStatisticsList = [
 ];
 
 exports.validateCreateSale = [
-  check("name").trim().notEmpty().bail().withMessage("saleId is required."),
+  check("name").trim().notEmpty().bail().withMessage("sale name is required."),
   check("startTime")
     .trim()
     .notEmpty()

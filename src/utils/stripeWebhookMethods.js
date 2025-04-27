@@ -78,15 +78,15 @@ const handleCheckoutSessionCompleted = async (event) => {
       token = new Token({
         tokenName: "PRC Coin",
         tokenSymbol: "PRC",
-        totalSupply: 1000000000, // Example total supply
+        totalSupply: 1000000000,
         fundsRaised: 0,
-        availableTokens: 1000000000, // Initially equal to total supply
+        availableTokens: 1000000000,
         claimedTokens: 0,
       });
     }
 
     token.claimedTokens += Number(tokenIn);
-    token.availableTokens -= Number(tokenIn);
+    // token.availableTokens -= Number(tokenIn);
     token.fundsRaised += Number(tokenOut);
     await token.save();
 
@@ -108,7 +108,6 @@ const handleCheckoutSessionCompleted = async (event) => {
         saleId,
         metadata,
         eventType: "checkout.session.completed",
-        status: session.status,
         email: session.customer_details.email || null,
         sessionCreationTime: session.created,
         sessionExpirationTime: session.expires_at || null,

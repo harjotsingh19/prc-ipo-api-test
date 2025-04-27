@@ -420,13 +420,12 @@ const createSale = async (req, res) => {
       );
     }
 
-    // await Sale.updateMany({ active: true }, { active: false });
     const sale = await Sale.create({
       name: normalizedName,
       startTime,
       endTime,
       tokenPrice,
-      active: true,
+      active: false,
     });
     return httpResponse(res, statusCode.ok, true, message.saleCreated, sale);
   } catch (error) {
@@ -1468,6 +1467,162 @@ const updateUserStatus = async (req, res) => {
     return httpResponse(res, statusCode.ok, true, responseMessage);
   } catch (error) {
     console.log("error here ===>", error);
+  }
+  return httpResponse(res, statusCode.errorPage, false, error.message);
+};
+
+const transactions = async (req, res) => {
+  try {
+    const { page, investorAddress } = req.query;
+    const pageSize = parseInt(req.query.pageSize);
+    const skip = (page - 1) * pageSize;
+    const query = {};
+
+    const recentTransactions = await Transaction.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(pageSize);
+    const totalCount = await Transaction.countDocuments();
+    const responseData = {
+      page,
+      pageSize,
+      totalCount,
+      recentTransactions,
+    };
+
+    return httpResponse(
+      res,
+      statusCode.ok,
+      true,
+      message.dashboardDataFetchSuccess,
+      responseData
+    );
+  } catch (error) {
+    return httpResponse(res, statusCode.errorPage, false, error.message);
+  }
+};
+
+const getSalesAirDropTransactions = async (req, res) => {
+  try {
+    const { page } = req.query;
+    const pageSize = parseInt(req.query.pageSize);
+    const saleId = req.params.id;
+
+    const skip = (page - 1) * pageSize;
+    let whereClause = {
+      saleId: new ObjectId(saleId),
+      paymentStatus: "Paid",
+      paymentTokenOutStatus: false,
+    };
+
+    const transactionsData = await Transaction.aggregate([
+      { $match: whereClause },
+      {
+        $lookup: {
+          from: "users",
+          localField: "transactions.userId",
+          foreignField: "_id",
+          as: "transactions.userDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$transactions.userDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "sales",
+          localField: "transactions.saleId",
+          foreignField: "_id",
+          as: "transactions.saleDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$transactions.saleDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          "transactions._id": 1,
+          "transactions.paymentId": 1,
+          "transactions.tokenOut": 1,
+          "transactions.tokenIn": 1,
+          "transactions.paymentStatus": 1,
+          "transactions.saleId": 1,
+          "transactions.created_at": 1,
+          "transactions.saleDetails._id": 1,
+          "transactions.saleDetails.name": 1,
+          "transactions.saleDetails.startTime": 1,
+          "transactions.saleDetails.endTime": 1,
+          "transactions.saleDetails.tokenPrice": 1,
+          "transactions.userDetails._id": 1,
+          "transactions.userDetails.email": 1,
+          "transactions.userDetails.lastName": 1,
+          "transactions.userDetails.firstName": 1,
+          "transactions.userDetails.walletAddress": 1,
+        },
+      },
+      { $skip: skip }, // 👈 Pagination: Skip X documents
+      { $limit: pageSize }, // 👈 Pagination: Limit to pageSize
+    ]);
+
+    // 4. Optional total count for frontend
+    const totalTransactions = await Transaction.countDocuments(
+      condition
+    ).exec();
+
+    const responseData = {
+      page,
+      pageSize,
+      totalTransactions,
+      transactionsData,
+    };
+
+    return httpResponse(
+      res,
+      statusCode.ok,
+      true,
+      message.allTransactionReturned,
+      responseData
+    );
+  } catch (error) {
+    console.log("error: ", error);
+    return httpResponse(res, statusCode.errorPage, false, error.message);
+  }
+};
+
+const updateSalesAirDropTransactions = async (req, res) => {
+  try {
+    const { userIds, saleId } = req.body;
+
+    const transactionsData = await Transaction.updateMany(
+      { userId: { $in: userIds }, saleId: new ObjectId(saleId) },
+      { paymentTokenOutStatus: true }
+    );
+
+    if (transactionsData.modifiedCount === transactionsData.matchedCount) {
+      return httpResponse(
+        res,
+        statusCode.ok,
+        true,
+        message.allSalesReturned,
+        {}
+      );
+    }
+
+    return httpResponse(
+      res,
+      statusCode.badRequest,
+      true,
+      message.allTransactionUpdated,
+      {}
+    );
+  } catch (error) {
+    console.log("error: ", error);
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
@@ -1493,4 +1648,8 @@ module.exports = {
   getClaimTokenHistory,
   downloadInvestments,
   updateUserStatus,
+  transactions,
+  transactions,
+  getSalesAirDropTransactions,
+  updateSalesAirDropTransactions,
 };

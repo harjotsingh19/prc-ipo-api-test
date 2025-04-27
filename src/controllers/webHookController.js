@@ -7,7 +7,7 @@ const {
   handleCheckoutSessionCompleted,
   handleCheckoutSessionExpired,
   handlePaymentIntentFailed,
-} = require("../utils/stripeWebhookMethods.js"); // Import the helper methods
+} = require("../utils/stripeWebhookMethods.js");
 
 const handleStripeWebhook = async (req, res) => {
   try {

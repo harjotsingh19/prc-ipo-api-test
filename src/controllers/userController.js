@@ -93,38 +93,6 @@ const generateBase32Secret = async () => {
   return secretKey;
 };
 
-const enableMFA = async (req, res) => {
-  try {
-    if (req.data.id && req.data.id.toString() == req.params.id.toString()) {
-      const secretKey = await generateBase32Secret();
-      await User.findByIdAndUpdate(
-        req.params.id,
-        { mfaSecret: secretKey.ascii },
-        { new: true }
-      ).exec();
-      const otpauth_url = speakeasy.otpauthURL({
-        secret: secretKey.ascii,
-        label: "Security Code",
-        algorithm: "sha512",
-      });
-
-      const qrCodeDataURL = await QRCode.toDataURL(otpauth_url);
-      return httpResponse(res, statusCode.ok, true, message.mfaEnableSuccess, {
-        qrCodeDataURL,
-      });
-    }
-    return httpResponse(
-      res,
-      statusCode.unAuthorized,
-      false,
-      message.unauthorizedUser,
-      {}
-    );
-  } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
-  }
-};
-
 const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.data.id).exec();
@@ -159,13 +127,13 @@ const logout = async (req, res) => {
       from: "Logout",
       message: message.logoutSuccess,
     });
-    await RefreshTokens.deleteOne({
+    await RefreshTokens.deleteMany({
       userId: req.data.id,
       deviceId: req.body.deviceId,
     });
     return httpResponse(res, statusCode.ok, true, message.logoutSuccess, {});
   } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
+    return httpResponse(res, statusCode.serverError, false, error.message);
   }
 };
 
@@ -183,7 +151,6 @@ const changePassword = async (req, res) => {
       );
     }
 
-    // Validate passwords match
     if (newPassword !== confirmPassword) {
       return httpResponse(
         res,

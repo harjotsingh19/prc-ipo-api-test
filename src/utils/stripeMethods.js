@@ -172,7 +172,7 @@ const createCustomer = async (email, address = {}) => {
       //   state: address.state ? address.state : null,
       // },
     });
-    if (customer && customer.id) {
+    if (customer?.id) {
       return { isSuccess: true, customerId: customer.id };
     } else {
       return { isSuccess: false, error: messages.fieldError };

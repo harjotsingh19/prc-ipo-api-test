@@ -23,27 +23,25 @@ const registerInvestor = async (req, res) => {
     const { firstName, lastName, email, password, role } = req.body;
 
     const userEmail = email.toLowerCase();
-    const userExists = await User.findOne({
-      email: userEmail,
-      isEmailVerified: false,
-    });
+    const existingUser = await User.findOne({ email: userEmail }).exec();
 
     let customerStripeId;
 
-    if (userExists) {
-      customerStripeId = userExists.customerStripeId; // Reuse the existing Stripe customer ID
-      await Otp.deleteMany({ userId: userExists._id }).exec();
-      await User.deleteOne({ email: userEmail }).exec();
-    } else {
-      return httpResponse(
-        res,
-        statusCode.errorPage,
-        false,
-        message.userEmailAlreadyExists,
-        {}
-      );
+    if (existingUser) {
+      if (!existingUser.isEmailVerified) {
+        customerStripeId = existingUser.customerStripeId;
+        await Otp.deleteMany({ userId: existingUser._id }).exec();
+        await User.deleteOne({ email: userEmail }).exec();
+      } else {
+        return httpResponse(
+          res,
+          statusCode.badRequest,
+          false,
+          message.userEmailAlreadyExists,
+          {}
+        );
+      }
     }
-
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -52,7 +50,7 @@ const registerInvestor = async (req, res) => {
       if (!customerData.isSuccess) {
         return httpResponse(
           res,
-          statusCode.errorPage,
+          statusCode.badRequest,
           false,
           message.userNotCreatedOnStripe,
           null
@@ -71,14 +69,28 @@ const registerInvestor = async (req, res) => {
       // status: status.NEW,
       customerStripeId,
     });
-    console.log("🚀 ~ registerInvestor ~ user:", user);
 
+    let emailSent;
     if (user) {
       const otp = await generateOTP(user._id, otpOperations.emailVerification);
-      await sendEmail(user.email, emailTemplateId.emailVerification, {
-        user_name: user.firstName,
-        otp,
-      });
+      emailSent = await sendEmail(
+        user.email,
+        emailTemplateId.emailVerification,
+        {
+          user_name: user.firstName,
+          otp,
+        }
+      );
+    }
+
+    if (emailSent[0]?.statusCode != 202) {
+      return httpResponse(
+        res,
+        statusCode.serverError,
+        false,
+        message.emailNotSent,
+        null
+      );
     }
 
     return httpResponse(
@@ -90,13 +102,21 @@ const registerInvestor = async (req, res) => {
     );
   } catch (error) {
     console.log("error here ===>", error.message);
-    return httpResponse(res, statusCode.errorPage, false, error.message);
+    return httpResponse(res, statusCode.badRequest, false, error.message);
   }
 };
 
 const verifyOTP = async (req, res) => {
   try {
     const { otp, userId, operation } = req.body;
+    if (operation != otpOperations.emailVerification) {
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.invalidOperation
+      );
+    }
 
     const otpData = await Otp.findOne({ userId: userId, operation })
       .populate("userId")
@@ -138,7 +158,7 @@ const verifyOTP = async (req, res) => {
     switch (operation) {
       case otpOperations.emailVerification:
         updateUserData.isEmailVerified = true;
-        updateUserData.status = status.EMAIL_VERIFIED;
+        // updateUserData.status = status.EMAIL_VERIFIED;
         // statusHistory.status = status.EMAIL_VERIFIED;
         break;
       case otpOperations.phoneVerification:
@@ -168,7 +188,7 @@ const verifyOTP = async (req, res) => {
       accessToken: accessToken,
     });
   } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
+    return httpResponse(res, statusCode.serverError, false, error.message);
   }
 };
 
@@ -194,7 +214,7 @@ const login = async (req, res) => {
         res,
         statusCode.badRequest,
         false,
-        message.wrongPassword
+        message.invalidPassword
       );
     }
 
@@ -255,6 +275,15 @@ const login = async (req, res) => {
 const resendOtp = async (req, res) => {
   try {
     const { userId, operation } = req.body;
+    if (operation != otpOperations.emailVerification) {
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.invalidOperation
+      );
+    }
+
     const userData = await User.findById(userId).exec();
 
     if (!userData) {
@@ -282,10 +311,10 @@ const resendOtp = async (req, res) => {
     await Otp.deleteMany({ userId: userData._id, operation }).exec();
 
     const otp = await generateOTP(userData._id, operation);
-    console.log("🚀 ~ resendOtp ~ otp:", otp);
 
+    let emailSent;
     if (operation == otpOperations.emailVerification) {
-      const t = await sendEmail(
+      emailSent = await sendEmail(
         userData.email,
         emailTemplateId.emailVerification,
         {
@@ -293,7 +322,16 @@ const resendOtp = async (req, res) => {
           otp,
         }
       );
-      console.log("🚀 ~ resendOtp ~ t:", t.response.body);
+    }
+
+    if (emailSent[0]?.statusCode != 202) {
+      return httpResponse(
+        res,
+        statusCode.serverError,
+        false,
+        message.emailNotSent,
+        null
+      );
     }
 
     return httpResponse(res, statusCode.ok, true, message.otpResentSuccess);
@@ -479,7 +517,7 @@ const refreshToken = async (req, res) => {
       res,
       statusCode.ok,
       true,
-      message.loginSuccessfully,
+      message.tokenRefreshedSuccessfully,
       responseData
     );
   } catch (error) {

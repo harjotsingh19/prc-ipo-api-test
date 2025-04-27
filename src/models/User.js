@@ -59,10 +59,6 @@ const userSchema = new mongoose.Schema(
     customerStripeId: {
       type: String,
     },
-    tokenBalance: {
-      type: Number,
-      default: 0,
-    },
     isBlocked: {
       type: Boolean,
       default: false,

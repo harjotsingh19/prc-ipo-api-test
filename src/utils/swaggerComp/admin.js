@@ -12,7 +12,7 @@ const getInvestors = {
       {
         in: "query",
         name: "page",
-        required: true,
+        // required: true,
         description: "Enter page number",
         schema: {
           type: "string",
@@ -21,7 +21,7 @@ const getInvestors = {
       {
         in: "query",
         name: "pageSize",
-        required: true,
+        // required: true,
         description: "Enter page size",
         schema: {
           type: "string",
@@ -49,37 +49,62 @@ const getInvestors = {
   },
 };
 
-const getInvestorInvestments = {
-  get: {
+const updateUserStatus = {
+  patch: {
     tags: ["Admin"],
     security: [{ bearerAuth: [] }],
-    summary: "Get investors investment listing",
-    description: "Get investors investment listing",
-    operationId: "getInvestorsInvestments",
+    summary: "Update User Status",
+    description: "Allows an admin to block or unblock a user.",
+    operationId: "updateUserStatus",
     parameters: [
       {
         in: "path",
-        name: "walletAddress",
+        name: "id",
         required: true,
-        description: "Enter investor walletAddress",
+        description: "The ID of the user to update.",
         schema: {
           type: "string",
         },
       },
       {
-        in: "query",
-        name: "page",
+        in: "body",
+        name: "userData",
         required: true,
-        description: "Enter page number",
+        description: "The data to update the user's status.",
         schema: {
-          type: "string",
+          type: "object",
+          required: ["isBlocked"],
+          properties: {
+            isBlocked: {
+              type: "boolean",
+              description: "Set to true to block the user, false to unblock.",
+            },
+          },
         },
       },
+    ],
+    responses: apiResponse,
+  },
+};
+
+module.exports = {
+  // ...existing exports
+  updateUserStatus,
+};
+
+const getInvestmentsById = {
+  get: {
+    tags: ["Admin"],
+    security: [{ bearerAuth: [] }],
+    summary: "Get Investment details",
+    description: "Get Investemnt details",
+    operationId: "getInvestmentDetails",
+    parameters: [
       {
-        in: "query",
-        name: "pageSize",
+        in: "path",
+        name: "id",
         required: true,
-        description: "Enter page size",
+        description: "Enter id",
         schema: {
           type: "string",
         },
@@ -133,34 +158,6 @@ const getAllInvestments = {
     responses: apiResponse,
   },
 };
-
-// const getSales = {
-//     get: {
-//         tags: ["Admin"],
-//         security: [{ bearerAuth: [] }],
-//         summary: "Get Sales listing",
-//         description: "Get Sales listing",
-//         operationId: "getAllSales",
-//         parameters: [{
-//             in: 'query',
-//             name: 'page',
-//             required: true,
-//             description: 'Enter page number',
-//             schema: {
-//                 type: 'string',
-//             },
-//         }, {
-//             in: 'query',
-//             name: 'pageSize',
-//             required: true,
-//             description: 'Enter page size',
-//             schema: {
-//                 type: 'string',
-//             },
-//         }],
-//         responses: apiResponse,
-//     },
-// };
 
 const getSales = {
   get: {
@@ -747,14 +744,14 @@ const getTransactions = {
           type: "string",
         },
       },
-      {
-        in: "query",
-        name: "status",
-        schema: {
-          type: "string",
-        },
-        description: "The Status you have selected is Invalid.",
-      },
+      // {
+      //   in: "query",
+      //   name: "status",
+      //   schema: {
+      //     type: "string",
+      //   },
+      //   description: "The Status you have selected is Invalid.",
+      // },
     ],
     responses: apiResponse,
   },
@@ -838,7 +835,8 @@ const updateSaleTransactions = {
 };
 module.exports = {
   getInvestors,
-  getInvestorInvestments,
+  // getInvestorInvestments,
+  getInvestmentsById,
   getAllInvestments,
   getSales,
   createSale,
@@ -860,4 +858,5 @@ module.exports = {
   getTransactions,
   getAirdrop,
   updateSaleTransactions,
+  updateUserStatus,
 };

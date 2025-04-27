@@ -7,17 +7,17 @@ const adminValidator = require("../utils/validators/admin");
 router.get(
   "/investors",
   auth,
-  [adminValidator.validateInvestorsList, adminValidator.result],
+  isAdmin,
+  [
+    adminValidator.handleInvestorQuery,
+    adminValidator.validateInvestorsList,
+    adminValidator.result,
+  ],
   adminController.getInvestors
 );
 router.get("/investments", auth, adminController.getAllInvestments);
 
-router.get(
-  "/investments/:id", 
-  auth,
-  adminController.getInvestmentDetails 
-);
-
+router.get("/investments/:id", auth, adminController.getInvestmentDetails);
 
 router.post(
   "/sales",
@@ -51,49 +51,19 @@ router.get(
   adminController.getSales
 );
 
-router.get("/token", adminController.getTokenDetails);
-router.post("/token", adminController.createToken);
-router.get(
-  "/address-whitelist",
-  auth,
-  [adminValidator.validateWhitelistAddressList, adminValidator.result],
-  adminController.getAllAddressWhitelist
-);
-router.get(
-  "/investors-investments/:walletAddress",
-  auth,
-  [adminValidator.validateInvestorsInvestmentsList, adminValidator.result],
-  adminController.getOneInvestorAllInvestments
-);
-
 router.get(
   "/sale-statistics",
   auth,
   [adminValidator.validateStatisticsList, adminValidator.result],
   adminController.getSaleStatistics
 );
-router.get("/user-analytics/:userId", auth, adminController.getUserAnalytics);
 router.get("/dashboard", auth, isAdmin, adminController.dashboard);
-router.get(
-  "/distribution-analytics/:saleId",
-  auth,
-  adminController.getDistributionAnalytics
-);
-router.patch("/investorKyc/:id", auth, adminController.updateInvestorKycStatus);
-router.get(
-  "/address-blacklist",
-  auth,
-  [adminValidator.validateWhitelistAddressList, adminValidator.result],
-  adminController.getAllAddressBlacklist
-);
 router.patch(
   "/user-status/:id",
   auth,
   [adminValidator.validateUserStatus, adminValidator.result],
   adminController.updateUserStatus
 );
-
-router.get("/transactions", auth, isAdmin, adminController.transactions);
 
 router.get("/transactions", auth, isAdmin, adminController.transactions);
 

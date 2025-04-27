@@ -1,17 +1,11 @@
 const User = require("../models/User");
 const Sale = require("../models/Sale");
 const { httpResponse } = require("../middleware/responseHandler");
-// const { createSession } = require("../utils/stripeMethods");
 const { statusCode, message } = require("../config/constants");
 const { default: mongoose } = require("mongoose");
 const config = require("../config/config");
 
-const {
-  createCustomer,
-  createSession,
-  createCustomerPortalConfiguration,
-  expireSession,
-} = require("../utils/stripeMethods");
+const { createCustomer, createSession } = require("../utils/stripeMethods");
 
 const purchaseToken = async (req, res) => {
   try {
@@ -41,13 +35,13 @@ const purchaseToken = async (req, res) => {
         res,
         statusCode.errorPage,
         false,
-        message.saleNotFound
+        message.saleNotActive
       );
     }
 
     let customerStripeId = userData?.customerStripeId;
     if (!customerStripeId) {
-      const customerData = await createCustomer(userData.email).exec();
+      const customerData = await createCustomer(userData.email);
       if (!customerData.isSuccess) {
         return httpResponse(
           res,
@@ -70,7 +64,6 @@ const purchaseToken = async (req, res) => {
       currency: "usd",
       mode: "payment",
       successUrl: `${config.userFrontendUrl}/checkout?session_id={CHECKOUT_SESSION_ID}`,
-      // errorUrl: `${config.userFrontendUrl}/failurePayment?session_id={CHECKOUT_SESSION_ID}`,
       errorUrl: `${config.userFrontendUrl}/cancel?session_id={CHECKOUT_SESSION_ID}`,
       metaData: {
         userId: userId,

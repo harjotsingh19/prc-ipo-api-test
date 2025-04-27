@@ -11,8 +11,7 @@ router.patch(
   userController.updateProfile
 );
 router.post("/activity", userController.addUserActivity);
-// router.patch("/enable-mfa/:id", auth, userController.enableMFA);
-// router.post("/verify-mfa/:id", userController.verifyMFA);
+
 router.get("/me", auth, userController.getUserProfile);
 router.post(
   "/logout",

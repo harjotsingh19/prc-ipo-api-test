@@ -3,8 +3,8 @@ const getInvestments = {
   get: {
     tags: ["Investor"],
     security: [{ bearerAuth: [] }],
-    summary: "Get investment",
-    description: "Get investment",
+    summary: "Get investor investment",
+    description: "Get investor investment",
     operationId: "getInvestment",
     parameters: [],
     responses: apiResponse,

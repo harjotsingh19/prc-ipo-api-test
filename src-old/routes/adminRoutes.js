@@ -12,7 +12,12 @@ router.get(
 );
 router.get("/investments", auth, adminController.getAllInvestments);
 
-router.get("/investments/:id", auth, adminController.getInvestmentDetails);
+router.get(
+  "/investments/:id", 
+  auth,
+  adminController.getInvestmentDetails 
+);
+
 
 router.post(
   "/sales",
@@ -20,6 +25,23 @@ router.post(
   isAdmin,
   [adminValidator.validateCreateSale, adminValidator.result],
   adminController.createSale
+);
+router.get(
+  "/sales/airdrop/:id",
+  auth,
+  isAdmin,
+  [
+    [...adminValidator.validateSaleList, ...adminValidator.commonIdValidate],
+    adminValidator.result,
+  ],
+  adminController.getSalesAirDropTransactions
+);
+
+router.put(
+  "/sales/airdrop",
+  auth,
+  isAdmin,
+  adminController.updateSalesAirDropTransactions
 );
 
 router.get(
@@ -70,5 +92,9 @@ router.patch(
   [adminValidator.validateUserStatus, adminValidator.result],
   adminController.updateUserStatus
 );
+
+router.get("/transactions", auth, isAdmin, adminController.transactions);
+
+router.get("/transactions", auth, isAdmin, adminController.transactions);
 
 module.exports = router;
