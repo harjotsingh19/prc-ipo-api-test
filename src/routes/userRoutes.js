@@ -26,4 +26,11 @@ router.put(
   userController.changePassword
 );
 
+router.put(
+  "/wallet",
+  auth,
+  [userValidator.validateLogout, userValidator.result],
+  userController.addWallet
+);
+
 module.exports = router;

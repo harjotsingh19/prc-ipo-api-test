@@ -12,9 +12,32 @@ require("./db/mongoose");
 const swaggerSpec = swaggerJsDoc(swaggerDefinition);
 
 const { setUpSendGrid } = require("../src/utils/mailManager");
+const rateLimit = require("express-rate-limit");
+const { statusCode, message, roles } = require("./config/constants");
+const { httpResponse } = require("./middleware/responseHandler");
 
 const app = express();
 app.disable("x-powered-by");
+
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 100,
+  handler: (req, res, next) => {
+    return httpResponse(
+      res,
+      statusCode.tooManyRequest,
+      false,
+      message.tooManyRequests
+    );
+  },
+});
+
+app.use((req, res, next) => {
+  if (req.path === "/webhook") {
+    return next();
+  }
+  limiter(req, res, next);
+});
 
 app.use(morgan("tiny"));
 

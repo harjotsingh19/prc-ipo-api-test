@@ -1005,6 +1005,25 @@ const updateSalesAirDropTransactions = async (req, res) => {
   }
 };
 
+const updateTransactionStatus = async (req, res) => {
+  try {
+    const adminCheck = await isAdmin(req.data.role);
+
+    if (!adminCheck) {
+      return httpResponse(
+        res,
+        statusCode.unAuthorized,
+        false,
+        message.userIsNotAdmin
+      );
+    }
+    
+  } catch (error) {
+    console.log("error here ===>", error);
+    return httpResponse(res, statusCode.errorPage, false, error.message);
+  }
+};
+
 module.exports = {
   getInvestors,
   getAllInvestments,

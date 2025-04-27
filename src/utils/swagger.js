@@ -6,6 +6,7 @@ const {
   getUserProfile,
   logout,
   changePassword,
+  addWallet,
 } = require("./swaggerComp/user");
 const adminComp = require("./swaggerComp/admin");
 const { apiResponse, uploadDocs } = require("./swaggerComp/common");
@@ -56,6 +57,7 @@ const swaggerDefinition = {
       "/user/me": getUserProfile,
       "/user/logout": logout,
       "/user/change-password": changePassword,
+      "/user/wallet": addWallet,
       "/admin/investors": adminComp.getInvestors,
       "/admin/investments": adminComp.getAllInvestments,
       "/admin/investments/{id}": adminComp.getInvestmentsById,

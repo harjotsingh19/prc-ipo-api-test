@@ -103,3 +103,11 @@ exports.validateLogout = [
     .bail()
     .withMessage("deviceId is required."),
 ];
+
+exports.validateLogout = [
+  check("walletAddress")
+    .trim()
+    .notEmpty()
+    .bail()
+    .withMessage("walletAddress is required."),
+];

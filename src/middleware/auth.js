@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const config = require("../config/config");
 const { statusCode, message, roles } = require("../config/constants");
 const { httpResponse } = require("../middleware/responseHandler");
+const rateLimit = require("express-rate-limit");
 
 const auth = (req, res, next) => {
   try {
@@ -56,4 +57,17 @@ const isAdmin = (req, res, next) => {
   }
 };
 
-module.exports = { auth, isAdmin };
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 3,
+  handler: (req, res, next) => {
+    return httpResponse(
+      res,
+      statusCode.tooManyRequest,
+      false,
+      message.tooManyRequests
+    );
+  },
+});
+
+module.exports = { auth, isAdmin, limiter };
