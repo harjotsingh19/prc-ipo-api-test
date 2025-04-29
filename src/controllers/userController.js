@@ -3,10 +3,18 @@ const speakeasy = require("speakeasy");
 const QRCode = require("qrcode");
 const User = require("../models/User");
 const { httpResponse } = require("../middleware/responseHandler");
-const { status, statusCode, message } = require("../config/constants");
+const {
+  status,
+  statusCode,
+  message,
+  otpOperations,
+  emailTemplateId,
+} = require("../config/constants");
 const UserActivity = require("../models/UserActivity");
 const { isCurrentUser } = require("../utils/helper");
 const RefreshTokens = require("../models/refreshToken");
+const { generateOTP } = require("../utils/helper");
+const { sendEmail } = require("../utils/mailManager");
 
 const updateProfile = async (req, res) => {
   try {
@@ -194,6 +202,25 @@ const addWallet = async (req, res) => {
         statusCode.badRequest,
         false,
         message.walletAddressAlreadyExists
+      );
+    }
+
+    if (userData?.walletAddress) {
+      const otp = await generateOTP(userData._id, otpOperations.updateWallet);
+
+      await sendEmail(userData.email, emailTemplateId.updateWallet, {
+        user_name: userData.firstName,
+        otp,
+      });
+
+      userData.tempWalletAddress = walletAddress.toLowerCase();
+      await userData.save();
+
+      return httpResponse(
+        res,
+        statusCode.ok,
+        true,
+        message.otpSentSuccessfully
       );
     }
 

@@ -1,7 +1,6 @@
 const User = require("../models/User");
 const Sale = require("../models/Sale");
 const Token = require("../models/Token");
-const PDFDocument = require("pdfkit");
 
 const { httpResponse } = require("../middleware/responseHandler");
 const { isAdmin, addFiltersToWhereClause } = require("../utils/helper");
