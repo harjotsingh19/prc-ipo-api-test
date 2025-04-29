@@ -21,3 +21,18 @@ exports.sendEmail = async (recipient, templateId, template_data) => {
     return e;
   }
 };
+
+exports.sendEmailToMultipleUsers = async (templateId, mailData) => {
+  const emailBody = {
+    from: config.sendGridEmailAddress,
+    templateId,
+    personalizations: mailData,
+  };
+
+  try {
+    const response = await sendGridMail.send(emailBody);
+    return response;
+  } catch (e) {
+    return e;
+  }
+};

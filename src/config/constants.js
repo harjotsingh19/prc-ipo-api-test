@@ -32,7 +32,9 @@ const message = {
   singleInvestorReturned: "Investor returned",
 
   userNotCreatedOnStripe: "Error creating user on stripe",
+  userWalletUpdated: "User wallet updated successfully",
   userDoesnotExists: "User doesn't exists",
+  userIsBlocked: "This user is blocked and is not allowed to purchase tokens.",
   noChangeDetected:
     "No changes detected. The user's block status is already set to the requested value.",
 
@@ -176,6 +178,7 @@ const roles = {
 const otpOperations = {
   emailVerification: 1,
   phoneVerification: 2,
+  updateWallet: 3,
 };
 
 const tokenScheduleMonth = {
@@ -209,6 +212,9 @@ const emailTemplateId = {
   adminResetPassword: "d-2321dc47bc884cb69584f5a06f653c5a",
   emailVerification: "d-0ef5c6c8109d4118af682e7dc85b7cd1",
   resetPassword: "d-fcbaa17104744f608f2b1ca57af0d198",
+  updateWallet: "d-78d6042282d84c858ebf0b8c97fd44ae",
+  addWallet: "d-05eb49bd4d694d8f8c5e0288f3929d19",
+  airdropUpdate: "d-1b7ff7febe42469095bc5433c58bc92b",
 };
 
 const responseStatus = {

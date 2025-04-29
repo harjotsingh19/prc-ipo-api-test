@@ -17,7 +17,7 @@ const { default: mongoose } = require("mongoose");
 const Transaction = require("../models/Transaction");
 
 const moment = require("moment");
-const { sendEmail } = require("../utils/mailManager");
+const { sendEmail, sendEmailToMultipleUsers } = require("../utils/mailManager");
 
 const getInvestors = async (req, res) => {
   try {
@@ -1176,6 +1176,7 @@ const getSalesAirDropTransactions = async (req, res) => {
     let amounts = [];
     let receivers = [];
     let transactionIds = [];
+    let receiversData = [];
 
     if (transactionsData.length) {
       transactionsData.forEach((transaction) => {
@@ -1183,11 +1184,18 @@ const getSalesAirDropTransactions = async (req, res) => {
           transactionIds.push(transaction._id);
           amounts.push(ethers.parseUnits(transaction.tokenIn, 18));
           receivers.push(transaction.userDetails.walletAddress);
+          receiversData.push({
+            email: transaction.userDetails?.email,
+            user_name: transaction.userDetails?.firstName,
+            wallet_address: transaction.userDetails.walletAddress,
+            amount: transaction.tokenIn,
+          });
         }
       });
     }
     if (amounts.length === receivers.length) {
       const hash = await transferFunds(amounts, receivers);
+      await sendAirdropConfirmationMail(receiversData, hash);
       if (!hash) {
         return httpResponse(
           res,
@@ -1342,6 +1350,27 @@ const downloadInvestments = async (req, res) => {
     res.send(Buffer.from(pdfBuffer));
   } catch (error) {
     return httpResponse(res, statusCode.errorPage, false, error.message);
+  }
+};
+
+const sendAirdropConfirmationMail = async (receiversData, transactionHash) => {
+  try {
+    const mailData = receiversData.map((receiver) => ({
+      to: [{ email: receiver.email }],
+      dynamic_template_data: {
+        user_name: receiver.user_name,
+        wallet_address: receiver.wallet_address,
+        amount: receiver.amount,
+        transaction_hash: receiver.transaction_hash,
+      },
+    }));
+    const response = await sendEmailToMultipleUsers(
+      emailTemplateId.airdropUpdate,
+      mailData
+    );
+    console.log("✅ MAIL SENT TO USERS", response);
+  } catch (error) {
+    console.log("🚀 ~ sendAirdropConfirmationMail ~ error:", error);
   }
 };
 

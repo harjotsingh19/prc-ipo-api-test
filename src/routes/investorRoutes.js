@@ -6,6 +6,6 @@ const investorValidator = require("../utils/validators/investor");
 
 router.get("/", auth, investorController.getInvestments);
 
-router.get("/contribution", auth, investorController.getTokenContribution);
+router.get("/contribution", investorController.getTokenContribution);
 
 module.exports = router;

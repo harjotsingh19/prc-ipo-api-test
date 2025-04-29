@@ -27,6 +27,15 @@ const purchaseToken = async (req, res) => {
       );
     }
 
+    if (userData?.isBlocked) {
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.userIsBlocked
+      );
+    }
+
     const saleData = await Sale.findById(saleId).exec();
     console.log("🚀 ~ purchaseToken ~ saleData:", saleData);
 
