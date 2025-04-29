@@ -1,9 +1,11 @@
 const User = require("../models/User");
 const Sale = require("../models/Sale");
 const Token = require("../models/Token");
+const { ethers } = require("ethers");
 
 const { httpResponse } = require("../middleware/responseHandler");
 const { isAdmin, addFiltersToWhereClause } = require("../utils/helper");
+const { transferFunds } = require("../utils/blockchain");
 const { generatePDF } = require("../utils/pdfManager");
 const {
   statusCode,
@@ -15,7 +17,7 @@ const { default: mongoose } = require("mongoose");
 const Transaction = require("../models/Transaction");
 
 const moment = require("moment");
-const { sendEmail } = require("../utils/mailManager");
+const { sendEmail, sendEmailToMultipleUsers } = require("../utils/mailManager");
 
 const getInvestors = async (req, res) => {
   try {
@@ -1109,7 +1111,13 @@ const getSalesAirDropTransactions = async (req, res) => {
 
     // Fetch transactions with wallet addresses, sale details, and token info
     const transactionsData = await Transaction.aggregate([
-      { $match: whereClause }, // Match the conditions
+      {
+        $match: {
+          saleId: new mongoose.Types.ObjectId(`${saleId}`),
+          paymentStatus: "Paid",
+          paymentTokenOutStatus: false,
+        },
+      }, // Match the conditions
       {
         $lookup: {
           from: "users", // Join with the Users collection
@@ -1120,8 +1128,13 @@ const getSalesAirDropTransactions = async (req, res) => {
       },
       {
         $unwind: {
-          path: "$userDetails", // Unwind the userDetails array
-          preserveNullAndEmptyArrays: true, // Keep documents even if userDetails is null
+          path: "$userDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $match: {
+          "userDetails.walletAddress": { $nin: [null, ""] }, // Filter out empty/null walletAddress
         },
       },
       {
@@ -1160,23 +1173,67 @@ const getSalesAirDropTransactions = async (req, res) => {
       { $limit: pageSize },
     ]);
 
-    const totalTransactions = await Transaction.countDocuments(
-      whereClause
-    ).exec();
+    let amounts = [];
+    let receivers = [];
+    let transactionIds = [];
+    let receiversData = [];
 
-    const responseData = {
-      page: parseInt(page),
-      pageSize,
-      totalTransactions,
-      transactions: transactionsData,
-    };
+    if (transactionsData.length) {
+      transactionsData.forEach((transaction) => {
+        if (transaction?.tokenIn && transaction.userDetails?.walletAddress) {
+          transactionIds.push(transaction._id);
+          amounts.push(ethers.parseUnits(transaction.tokenIn, 18));
+          receivers.push(transaction.userDetails.walletAddress);
+          receiversData.push({
+            email: transaction.userDetails?.email,
+            user_name: transaction.userDetails?.firstName,
+            wallet_address: transaction.userDetails.walletAddress,
+            amount: transaction.tokenIn,
+          });
+        }
+      });
+    }
+    if (amounts.length === receivers.length) {
+      const hash = await transferFunds(amounts, receivers);
+      await sendAirdropConfirmationMail(receiversData, hash);
+      if (!hash) {
+        return httpResponse(
+          res,
+          statusCode.badRequest,
+          false,
+          message.ErrorWhileTransferFunds
+        );
+      }
+      const updatedTransactionsData = await Transaction.updateMany(
+        { _id: { $in: transactionIds } },
+        { paymentTokenOutStatus: true, paymentHash: hash }
+      );
 
+      if (
+        updatedTransactionsData.modifiedCount ===
+        updatedTransactionsData.matchedCount
+      ) {
+        return httpResponse(
+          res,
+          statusCode.ok,
+          true,
+          message.allTransactionReturned,
+          {}
+        );
+      } else {
+        return httpResponse(
+          res,
+          statusCode.badRequest,
+          false,
+          message.ErrorWhileTransferFunds
+        );
+      }
+    }
     return httpResponse(
       res,
-      statusCode.ok,
-      true,
-      message.allTransactionReturned,
-      responseData
+      statusCode.badRequest,
+      false,
+      message.ErrorWhileTransferFunds
     );
   } catch (error) {
     console.log("error: ", error);
@@ -1293,6 +1350,27 @@ const downloadInvestments = async (req, res) => {
     res.send(Buffer.from(pdfBuffer));
   } catch (error) {
     return httpResponse(res, statusCode.errorPage, false, error.message);
+  }
+};
+
+const sendAirdropConfirmationMail = async (receiversData, transactionHash) => {
+  try {
+    const mailData = receiversData.map((receiver) => ({
+      to: [{ email: receiver.email }],
+      dynamic_template_data: {
+        user_name: receiver.user_name,
+        wallet_address: receiver.wallet_address,
+        amount: receiver.amount,
+        transaction_hash: receiver.transaction_hash,
+      },
+    }));
+    const response = await sendEmailToMultipleUsers(
+      emailTemplateId.airdropUpdate,
+      mailData
+    );
+    console.log("✅ MAIL SENT TO USERS", response);
+  } catch (error) {
+    console.log("🚀 ~ sendAirdropConfirmationMail ~ error:", error);
   }
 };
 

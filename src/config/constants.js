@@ -78,7 +78,7 @@ const message = {
   saleEnded: "Sale ended successfully",
   SaleDataReturned: "Sale data returned",
   SaleNameAlreadyExists: "Sale name already exists",
-  allTransactionReturned: "All transaction Fetched Successfully",
+  allTransactionReturned: "Funds Transfer Successfully",
   allTransactionUpdated: "Transaction Updated Successfully",
   saleNotActive: "Sale does not exist or is not active.",
   ActiveSaleAlreadyExists: "Another active sale is already running.",
@@ -137,6 +137,8 @@ const message = {
 
   //validation
   validationError: "Validation failed",
+
+  ErrorWhileTransferFunds: "Error While Transfer funds",
 };
 
 const statusCode = {
