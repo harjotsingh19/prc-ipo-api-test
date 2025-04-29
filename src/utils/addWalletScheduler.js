@@ -15,12 +15,12 @@ cron.schedule("0 0 * * *", async () => {
       const mailData = usersWithoutWallet.map((user) => ({
         to: [{ email: user.email }],
         dynamic_template_data: {
-          first_name: user.firstName,
+          user_name: user.firstName,
         },
       }));
 
       const response = await sendEmailToMultipleUsers(
-        emailTemplateId.emailVerification,
+        emailTemplateId.addWallet,
         mailData
       );
       console.log("✅ MAIL SENT TO USERS", response);
