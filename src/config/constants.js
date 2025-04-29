@@ -34,6 +34,7 @@ const message = {
   userNotCreatedOnStripe: "Error creating user on stripe",
   userWalletUpdated: "User wallet updated successfully",
   userDoesnotExists: "User doesn't exists",
+  userIsBlocked: "This user is blocked and is not allowed to purchase tokens.",
   noChangeDetected:
     "No changes detected. The user's block status is already set to the requested value.",
 
