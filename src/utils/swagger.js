@@ -18,12 +18,12 @@ const swaggerDefinition = {
   definition: {
     info: {
       version: "1.0.0",
-      title: "RVA",
-      description: "RVA",
-      contact: {
-        name: "Developer",
-        email: "manpreet@debutinfotech.com",
-      },
+      title: "PRC-ICO",
+      description: "PRC-ICO",
+      // contact: {
+      //   name: "Developer",
+      //   email: "manpreet@debutinfotech.com",
+      // },
     },
     servers: [
       {
@@ -32,17 +32,17 @@ const swaggerDefinition = {
       },
     ],
     paths: {
-      "/health": {
-        get: {
-          tags: ["Health"],
-          summary: "Get Application Health status",
-          description: "Checks the health of the application",
-          operationId: "getHealth",
-          parameters: [],
-          responses: apiResponse,
-        },
-      },
-      "/auth/addWalletAddress": authComp.addWalletAddress,
+      // "/health": {
+      //   get: {
+      //     tags: ["Health"],
+      //     summary: "Get Application Health status",
+      //     description: "Checks the health of the application",
+      //     operationId: "getHealth",
+      //     parameters: [],
+      //     responses: apiResponse,
+      //   },
+      // },
+      // "/auth/addWalletAddress": authComp.addWalletAddress,
       "/auth/login": authComp.login,
       "/auth/forgotPassword": authComp.forgotPassword,
       "/auth/resetPassword/{token}": authComp.resetPassword,
@@ -59,35 +59,21 @@ const swaggerDefinition = {
       "/user/change-password": changePassword,
       "/user/wallet": addWallet,
       "/admin/investors": adminComp.getInvestors,
-      "/admin/investors-investments/{walletAddress}":
-        adminComp.getInvestorInvestments,
+      "/admin/investors/{id}": adminComp.getInvestorById,
       "/admin/investments": adminComp.getAllInvestments,
+      "/admin/investments/{id}": adminComp.getInvestmentsById,
+      "/admin/download-investments": adminComp.downloadInvestments,
       "/sales": adminComp.getSales,
       "/sales/{id}": adminComp.getSale,
       "/sales/purchase": adminComp.purchaseToken,
       "/admin/sales": adminComp.createSale,
-      "/admin/token": adminComp.createGetToken,
-      "/admin/address-whitelist": adminComp.whitelistWalletAddress,
-      "/admin/setAdminAddress": adminComp.setAdminWalletAddress,
-      "/admin/investorKyc": adminComp.investorKyc,
-      "/admin/investorKyc/{id}": adminComp.investorKycUpdate,
-      "/admin/sale-statistics": adminComp.getSaleStatistics,
-      "/admin/user-analytics/{userId}": adminComp.getUserAnalytics,
-      "/admin/distribution-analytics/{saleId}":
-        adminComp.getDistributionAnalytics,
-      "/admin/dashboard": adminComp.dashboard,
-      "/admin/address-blacklist": adminComp.getBlacklistAddressList,
-      "/admin/investor/onchain-id/{userId}": adminComp.updateInvestorOnchainId,
-      "/admin/claim-token-history": adminComp.getClaimTokenHistory,
-      "/admin/download-investments": adminComp.downloadPdf,
       "/admin/user-status/{id}": adminComp.updateUserStatus,
+      "/admin/dashboard": adminComp.dashboard,
       "/investor": investorComp.getInvestments,
-      "/investor/kyc": investorComp.getKycStatus,
-      "/investor/investment/vesting-schedule/{id}":
-        investorComp.viewVestingSchedule,
-      "/investor/claim-history": investorComp.getTokenClaimHistory,
       "/investor/contribution": investorComp.getContributions,
-      "/kyc/uploadDocs": uploadDocs,
+      "/admin/transactions": adminComp.getTransactions,
+      "/admin/sales/airdrop/{id}": adminComp.getAirdrop,
+      "/admin/sales/airdrop": adminComp.updateSaleTransactions,
     },
     schemes: ["http", "https"],
     securityDefinitions: {

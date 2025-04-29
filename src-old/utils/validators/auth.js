@@ -1,19 +1,12 @@
-// import { validationResult, check } from "express-validator";
-// import User from "../../models/users.js";
-// import * as passwordManager from '../../helper/passwordManager.js';
-// import response from "../../responseHandler/response.js";
-// import { messages, statusCode, responseStatus } from "../../core/constants/constant.js";
-
 const { validationResult, check } = require("express-validator");
-const User = require("../models/User.js");
+const User = require("../../models/User.js");
 
-// const passwordManager = require('../../helper/passwordManager.js');
-const response = require("../middleware/responseHandler.js");
+const response = require("../../middleware/responseHandler.js");
 const {
   message,
   statusCode,
   responseStatus,
-} = require("../config/constants.js");
+} = require("../../config/constants.js");
 const { logger } = require("ethers");
 
 class Validator {
@@ -69,7 +62,7 @@ class Validator {
           const user = await User.findOne({
             mobile: value,
             isMobileVerified: true,
-          });
+          }).exec();
           if (user) {
             throw new Error(message.mobileAlreadyExists);
           }
@@ -125,7 +118,7 @@ class Validator {
         .bail()
         .withMessage("userId is required.")
         .custom(async (value) => {
-          const user = await User.findOne({ _id: value });
+          const user = await User.findOne({ _id: value }).exec();
           if (!user) {
             throw new Error(message.userDoesnotExists);
           }
@@ -154,7 +147,7 @@ class Validator {
         .bail()
         .withMessage("userId is required.")
         .custom(async (value, { req }) => {
-          const user = await User.findOne({ _id: value });
+          const user = await User.findOne({ _id: value }).exec();
           if (!user) {
             throw new Error(message.noUserFound);
           }
@@ -231,7 +224,7 @@ class Validator {
         .custom(async (value, { req }) => {
           const user = await User.findOne({
             mobile: value,
-          });
+          }).exec();
           console.log("🚀 ~ Validator ~ .custom mobile ~ user:", user);
           if (!user) {
             throw new Error(message.noUserFound);
@@ -250,6 +243,7 @@ class Validator {
             throw new Error(message.incorrectMobileOrPassword);
           }
         }),
+      check("deviceId").trim().notEmpty().withMessage("deviceId is required."),
     ];
   }
 
@@ -290,7 +284,7 @@ class Validator {
         .custom(async (value) => {
           const user = await User.findOne({
             mobile: value,
-          });
+          }).exec();
           if (!user) {
             throw new Error(message.mobileNotFound);
           } else if (!user?.isMobileVerified) {
@@ -320,7 +314,7 @@ class Validator {
   //       .withMessage("User Id is required.")
   //       .custom(async (value) => {
   //         if (value) {
-  //           const user = await User.findOne({ _id: value });
+  //           const user = await User.findOne({ _id: value }).exec();
   //           if (!user) {
   //             throw new Error(message.noUserFound);
   //           }

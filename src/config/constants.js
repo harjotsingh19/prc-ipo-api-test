@@ -17,53 +17,31 @@ const message = {
   resetRequest: "Reset Request",
   invalidResetToken: "Invalid or expired reset token",
   invalidCredentials: "Invalid credentials",
-  passwordNotMatch: "Password and confirm password do not match",
+  passwordNotMatch: "New password and confirm password do not match",
   passwordUpdated: "Password updated successfully",
   phoneAlreadyVerified: "Phone already verified",
-
-  // KYC
-  kycStatus: "KYC Status",
-  kycStatusUpdate: "KYC Status Update",
-  kycDocsUploaded: "KYC documents uploaded successfully",
-  investorKycStatusReturned: "Investor KYC status returned",
-  kycDataReturned: "KYC data returned",
-  kycIsUnderReview: `
-  <div style="font-family: Helvetica,Arial,sans-serif;overflow:auto;line-height:2">
-  <h4><p style="color:black">Dear User,</p></h4>
-  <p style="color:black">Thank you for completing the KYC process. Your submission is currently under review. You will be notified via email once the review is completed. Thank you for your patience.</p>
-  <h4><p style="font-size:0.9em;">Best Regards,<br />RVA</p></h4>
-  <hr style="border:none;border-top:1px solid #eee" />
-  </div>`,
-  kycUpdateSuccess: `
-  <div style="font-family: Helvetica,Arial,sans-serif;overflow:auto;line-height:2">
-  <h4><p style="color:black">Dear User,</p></h4>
-  <p style="color:black">We are pleased to inform you that your KYC verification has been successfully completed. You can now access all the features of our platform without any restrictions.</p>
-  <h4><p style="font-size:0.9em;">Best Regards,<br />RVA</p></h4>
-  <hr style="border:none;border-top:1px solid #eee" />
-  </div>`,
-  kycUpdateReject: `
-  <div style="font-family: Helvetica,Arial,sans-serif;overflow:auto;line-height:2">
-  <h4><p style="color:black">Dear User,</p></h4>
-  <p style="color:black">We regret to inform you that your KYC verification has been rejected.</p>
-  <h4><p style="font-size:0.9em;">Best Regards,<br />RVA</p></h4>
-  <hr style="border:none;border-top:1px solid #eee" />
-  </div>`,
-  uploadRequiredDocs: "Please upload required docs",
-  kycInProgress: "Your kyc is in progress",
+  emailNotSent: "Email not sent",
+  invalidOperation: "Invalid operation",
 
   // Investor / Admin
   walletAddressAlreadyExists: "Wallet Address already exists",
   walletAddressAddedSuccessfully: "Wallet address added successfully",
   adminAlreadyExists: "Admin already exists",
   userAlreadyExists: "User already exists",
+  userEmailAlreadyExists: "A user with this email address already exists.",
+  singleInvestorReturned: "Investor returned",
+
   userNotCreatedOnStripe: "Error creating user on stripe",
-  saleNotFound: "Sale not Active or Exist",
   userDoesnotExists: "User doesn't exists",
+  noChangeDetected:
+    "No changes detected. The user's block status is already set to the requested value.",
+
   userNotActive:
     "User is not active, please contact admin for further assistance",
   userNotVerified: "User is not verified",
   kycPending: "KYC Verification is pending",
   wrongPassword: "Incorrect credentials. Please try again.",
+  invalidPassword: "Password is invalid",
   credentialsResetSuccess: "Credentials reset successfully",
   credentialsResetFailed: "Credentials reset failed",
   allInvestorsReturned: "Returned all investors",
@@ -79,6 +57,10 @@ const message = {
   dataFetchSuccess: "Data fetched successfully",
   tokenClaimedSuccess: "Token claimed successfully",
   transactionNotFound: "Transaction not found",
+  transactionIdRequired: "Transaction ID is required",
+  transactionDetailsFetched: "Transaction details fetched successfully",
+  tokenRefreshedSuccessfully: "Token refreshed successfully",
+
   vestingDataNotFound: "Vesting data not found",
   fetchBlacklistAddressSuccess: "Blacklist address fetched successfully",
   onchainIdUpdated: "Investor onchain id updated successfully",
@@ -92,7 +74,14 @@ const message = {
   saleCreated: "Sale created successfully",
   saleNotFound: "Sale not found",
   saleEnded: "Sale ended successfully",
+  SaleDataReturned: "Sale data returned",
   SaleNameAlreadyExists: "Sale name already exists",
+  allTransactionReturned: "All transaction Fetched Successfully",
+  allTransactionUpdated: "Transaction Updated Successfully",
+  saleNotActive: "Sale does not exist or is not active.",
+  ActiveSaleAlreadyExists: "Another active sale is already running.",
+  FutureSaleOverlapError:
+    "Another sale is scheduled to start within the time frame of the new sale. Please choose different start and end times to avoid overlapping with an existing future sale.",
 
   //stripe
   missingMetadata: "Required metadata is missing in the session.",
@@ -105,11 +94,15 @@ const message = {
   tokenDetailsReturned: "Token details returned",
   tokenCreated: "Token created successfully",
   icoFinalizedSuccess: "ICO finalized successfully",
+  tooManyRequests: "Too many requests from this IP. Please try after some time",
+
   tokenDocumentNotFound: "Token document not found.",
   tokensCreditedSuccessfully: "Tokens credited successfully.",
 
   // User
   unauthorizedUser: "User is not authorized",
+  userBlockSuccess: "User blocked successfully",
+  userUnblockSuccess: "User unblocked successfully",
   profileUpdateSuccess: "Profile updated successfully",
   emailAlreadyExist: "Email already exist",
   emailNotExist: "email does not exist",
@@ -138,6 +131,7 @@ const message = {
 
   //webhook
   webhookProcessingError: "Error processing the webhook.",
+  webhookSignatureVerificationFailed: "Webhook signature verification failed.",
 
   //validation
   validationError: "Validation failed",
@@ -175,18 +169,6 @@ const status = {
 const roles = {
   ADMIN: "ADMIN",
   INVESTOR: "INVESTOR",
-};
-
-const phoneOtpVerificationMsg = (otp) => {
-  return `
-      <div style="font-family: Helvetica,Arial,sans-serif;overflow:auto;line-height:2">
-        <h4><p style="color:black">Dear User,</p></h4>
-        <p style="color:black">Use the following OTP to complete your phone verification. OTP is valid for 5 minutes.</p>
-        <h2 style="background: #00466a;margin: 0;width: max-content;padding: 0 10px;color: #fff;border-radius: 4px;">${otp}</h2>
-        <h4><p style="color:black">Best Regards,<br />RVA</p></h4>
-        <hr style="border:none;border-top:1px solid #eee" />
-      </div>
-      `;
 };
 
 const otpOperations = {
@@ -239,11 +221,11 @@ module.exports = {
   responseStatus,
   roles,
   otpOperations,
-  phoneOtpVerificationMsg,
+  // phoneOtpVerificationMsg,
   tokenScheduleMonth,
   notificationCategory,
   userStatusOnBlockchain,
-  kycRequestNotificationMsg,
-  kycReUploadNotificationMsg,
+  // kycRequestNotificationMsg,
+  // kycReUploadNotificationMsg,
   emailTemplateId,
 };

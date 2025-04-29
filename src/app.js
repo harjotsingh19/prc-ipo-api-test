@@ -9,35 +9,53 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
 const { swaggerDefinition } = require("./utils/swagger.js");
 require("./db/mongoose");
-require("./utils/socketManager");
+require("./utils/saleScheduler.js"); // Start Cron Job
 const swaggerSpec = swaggerJsDoc(swaggerDefinition);
-const {
-  transactionCron,
-  createSaleCron,
-  saleFinalizeCron,
-  icoFinalizedCron,
-  userStatusUpdateCron,
-  claimTokenCron,
-} = require("./utils/cron");
+const rateLimit = require("express-rate-limit");
+
 const { setUpSendGrid } = require("../src/utils/mailManager");
 
 const app = express();
 app.disable("x-powered-by");
 
-app.use(morgan("tiny"));
-app.use(bodyParser.json());
-app.use(express.json());
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 100,
+  handler: (req, res, next) => {
+    return httpResponse(
+      res,
+      statusCode.tooManyRequest,
+      false,
+      message.tooManyRequests
+    );
+  },
+});
 
-// For Connecting Frontend to backend
+app.use((req, res, next) => {
+  if (req.path === "/webhook") {
+    return next();
+  }
+  limiter(req, res, next);
+});
+
+app.use(morgan("tiny"));
+
+app.use(
+  bodyParser.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString();
+    },
+  })
+);
+
 const corsOptions = {
   origin: "*",
-  optionsSuccessStatus: 200, // For legacy browser support
+  optionsSuccessStatus: 200,
   methods: "GET, POST, PUT, PATCH, DELETE",
 };
 
 app.use(cors(corsOptions));
 
-// Route to check the application health.
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "ok",
@@ -46,12 +64,10 @@ app.get("/health", (req, res) => {
   });
 });
 
-// Setting SendGrid Api Key
 setUpSendGrid();
 
 app.use("", routes);
 
-// Route for swagger
 app.use(
   "/docs",
   swaggerUi.serve,
@@ -60,7 +76,6 @@ app.use(
   })
 );
 
-// Enable access uploads file from frontend
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.listen(config.port, () => {

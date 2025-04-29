@@ -12,9 +12,7 @@ router.use("/auth", authRoutes);
 router.use("/admin", adminRoutes);
 router.use("/sales", saleRoutes);
 router.use("/investor", investorRoutes);
-// router.use('/kyc', kycRoutes)
 router.use("/user", userRoutes);
-// router.use('/notifications', notificationRoutes);
 router.use("/webhook", webhookRoutes);
 
 module.exports = router;

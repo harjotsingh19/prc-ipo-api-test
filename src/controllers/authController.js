@@ -16,42 +16,50 @@ const {
   emailTemplateId,
 } = require("../config/constants");
 const config = require("../config/config");
-// const { createApplicant } = require("./kycController")
 const { sendEmail } = require("../utils/mailManager");
+const { log } = require("console");
 
-// To register an investor
 const registerInvestor = async (req, res) => {
   try {
     const { firstName, lastName, email, password, role } = req.body;
-    const userExists = await User.findOne({ email: email.toLowerCase() });
 
-    if (userExists) {
-      return httpResponse(
-        res,
-        statusCode.errorPage,
-        false,
-        message.userAlreadyExists,
-        null
-      );
+    const userEmail = email.toLowerCase();
+    const existingUser = await User.findOne({ email: userEmail }).exec();
+
+    let customerStripeId;
+
+    if (existingUser) {
+      if (!existingUser.isEmailVerified) {
+        customerStripeId = existingUser.customerStripeId;
+        await Otp.deleteMany({ userId: existingUser._id }).exec();
+        await User.deleteOne({ email: userEmail }).exec();
+
+        console.log("existingUser in if of register investor ===>");
+      } else {
+        return httpResponse(
+          res,
+          statusCode.badRequest,
+          false,
+          message.userEmailAlreadyExists,
+          {}
+        );
+      }
     }
-
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    const statusHistory = {
-      status: status.NEW,
-      timestamp: Date.now(),
-      reason: "",
-    };
-    const userEmail = email.toLowerCase();
-    const customerData = await createCustomer(userEmail);
-    if (!customerData.isSuccess) {
-      return httpResponse(
-        res,
-        statusCode.errorPage,
-        false,
-        message.userNotCreatedOnStripe,
-        null
-      );
+
+    if (!customerStripeId) {
+      const customerData = await createCustomer(userEmail);
+      if (!customerData.isSuccess) {
+        return httpResponse(
+          res,
+          statusCode.badRequest,
+          false,
+          message.userNotCreatedOnStripe,
+          null
+        );
+      }
+      customerStripeId = customerData.customerId;
     }
 
     const user = await User.create({
@@ -61,17 +69,31 @@ const registerInvestor = async (req, res) => {
       password: hashedPassword,
       role,
       isActive: true,
-      status: status.NEW,
-      statusHistory: statusHistory,
-      customerStripeId: customerData.customerId,
+      // status: status.NEW,
+      customerStripeId,
     });
 
+    let emailSent;
     if (user) {
       const otp = await generateOTP(user._id, otpOperations.emailVerification);
-      await sendEmail(user.email, emailTemplateId.emailVerification, {
-        user_name: user.firstName,
-        otp,
-      });
+      emailSent = await sendEmail(
+        user.email,
+        emailTemplateId.emailVerification,
+        {
+          user_name: user.firstName,
+          otp,
+        }
+      );
+    }
+
+    if (emailSent[0]?.statusCode != 202) {
+      return httpResponse(
+        res,
+        statusCode.serverError,
+        false,
+        message.emailNotSent,
+        null
+      );
     }
 
     return httpResponse(
@@ -82,41 +104,68 @@ const registerInvestor = async (req, res) => {
       user
     );
   } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
+    console.log("error here ===>", error.message);
+    return httpResponse(res, statusCode.badRequest, false, error.message);
   }
 };
 
-// API to verify the OTP
 const verifyOTP = async (req, res) => {
   try {
     const { otp, userId, operation } = req.body;
-    console.log("🚀 ~ verifyOTP ~ req.body:", req.body);
+    console.log("🚀 ~ verifyOTP ~ payload otp:", otp, userId, operation);
 
-    const otpData = await Otp.findOne({ userId: userId, operation }).populate(
-      "userId"
-    );
+    if (operation != otpOperations.emailVerification) {
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.invalidOperation
+      );
+    }
+
+    console.log("🚀 ~ verifyOTP ~ payload otp:", otp);
+
+    console.log("🚀 ~ verifyOTP ~ payload otp:", typeof otp);
+
+    const otpData = await Otp.findOne({ userId: userId, operation })
+      .populate("userId")
+      .exec();
+
     console.log("🚀 ~ verifyOTP ~ otpData:", otpData);
+
+    console.log("🚀 ~ verifyOTP ~ otpData:", otpData.otp);
+
+    console.log("🚀 ~ verifyOTP ~ otpData:", typeof otpData.otp);
+
     if (!otpData) {
-      return httpResponse(res, statusCode.errorPage, false, message.otpExpired);
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.otpExpired
+      );
     }
 
     if (otpData.userId.isEmailVerified) {
       return httpResponse(
         res,
-        statusCode.errorPage,
+        statusCode.badRequest,
         false,
         message.userAlreadyVerified
       );
     }
 
     if (otpData.otp !== otp) {
-      return httpResponse(res, statusCode.errorPage, false, message.invalidOtp);
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.invalidOtp
+      );
     }
 
-    // delete otp data
-    await otpData.deleteOne({ userId, operation });
+    await otpData.deleteOne({ userId, operation }).exec();
 
-    const statusHistory = { timestamp: Date.now(), reason: "" };
     const updateUserData = {
       updated_at: Date.now(),
     };
@@ -124,8 +173,6 @@ const verifyOTP = async (req, res) => {
     switch (operation) {
       case otpOperations.emailVerification:
         updateUserData.isEmailVerified = true;
-        updateUserData.status = status.EMAIL_VERIFIED;
-        statusHistory.status = status.EMAIL_VERIFIED;
         break;
       case otpOperations.phoneVerification:
         updateUserData.isPhoneVerified = true;
@@ -137,13 +184,12 @@ const verifyOTP = async (req, res) => {
     const updatedUserData = await User.findOneAndUpdate(
       { _id: userId },
       {
-        $push: { statusHistory: statusHistory },
         $set: updateUserData,
       },
       {
         new: true,
       }
-    );
+    ).exec();
 
     const accessToken = await jwtSign(
       updatedUserData,
@@ -154,17 +200,17 @@ const verifyOTP = async (req, res) => {
       accessToken: accessToken,
     });
   } catch (error) {
-    console.log("error here ===>", error);
-    return httpResponse(res, statusCode.errorPage, false, error.message);
+    console.log("🚀 ~ verifyOTP ~ error:", error.message);
+
+    return httpResponse(res, statusCode.serverError, false, error.message);
   }
 };
 
-// Login API for all users
 const login = async (req, res) => {
   try {
     const { email, password, deviceId } = req.body;
 
-    const userData = await User.findOne({ email });
+    const userData = await User.findOne({ email }).exec();
 
     if (!userData) {
       return httpResponse(
@@ -182,7 +228,7 @@ const login = async (req, res) => {
         res,
         statusCode.badRequest,
         false,
-        message.wrongPassword
+        message.invalidPassword
       );
     }
 
@@ -209,7 +255,6 @@ const login = async (req, res) => {
       config.refreshTokenSecret,
       config.refreshTokenExpiry
     );
-    console.log("🚀 ~ login ~ refreshToken:", refreshToken);
 
     const resp = {
       userId: userData._id,
@@ -222,18 +267,12 @@ const login = async (req, res) => {
       refreshToken,
       deviceId,
     };
-    console.log("🚀 ~ login ~ resp.accessToken:", resp.accessToken);
 
-    const refreshTokenData = {
-      userId: userData._id,
-      refreshToken: refreshToken,
-    };
-    const storeRefreshToken = await RefreshTokens.findOneAndUpdate(
+    await RefreshTokens.findOneAndUpdate(
       { userId: userData._id },
       { refreshToken: refreshToken, deviceId },
       { upsert: true, new: true }
-    );
-    console.log("🚀 ~ login ~ storeRefreshToken:", storeRefreshToken);
+    ).exec();
 
     return httpResponse(
       res,
@@ -247,11 +286,19 @@ const login = async (req, res) => {
   }
 };
 
-// Resend OTP
 const resendOtp = async (req, res) => {
   try {
     const { userId, operation } = req.body;
-    const userData = await User.findById(userId);
+    if (operation != otpOperations.emailVerification) {
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.invalidOperation
+      );
+    }
+
+    const userData = await User.findById(userId).exec();
 
     if (!userData) {
       return httpResponse(
@@ -274,14 +321,31 @@ const resendOtp = async (req, res) => {
         message.userAlreadyVerified
       );
     }
+    await Otp.deleteMany({ userId: userData._id, operation }).exec();
+    await Otp.deleteMany({ userId: userData._id, operation }).exec();
 
     const otp = await generateOTP(userData._id, operation);
 
+    let emailSent;
     if (operation == otpOperations.emailVerification) {
-      await sendEmail(userData.email, emailTemplateId.emailVerification, {
-        user_name: userData.name,
-        otp,
-      });
+      emailSent = await sendEmail(
+        userData.email,
+        emailTemplateId.emailVerification,
+        {
+          user_name: userData.firstName,
+          otp,
+        }
+      );
+    }
+
+    if (emailSent[0]?.statusCode != 202) {
+      return httpResponse(
+        res,
+        statusCode.serverError,
+        false,
+        message.emailNotSent,
+        null
+      );
     }
 
     return httpResponse(res, statusCode.ok, true, message.otpResentSuccess);
@@ -290,12 +354,11 @@ const resendOtp = async (req, res) => {
   }
 };
 
-// Forgot Password API
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).exec();
 
     if (!user) {
       return httpResponse(
@@ -306,23 +369,20 @@ const forgotPassword = async (req, res) => {
       );
     }
 
-    // Generate a reset token
     const resetToken = crypto.randomBytes(32).toString("hex");
-    const resetTokenExpiry = Date.now() + 3600000; // Token valid for 1 hour
+    const resetTokenExpiry = Date.now() + 3600000;
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = resetTokenExpiry;
     await user.save();
 
     let frontendUrl;
-    if (user.role !== "ADMIN") {
-      frontendUrl = config.userFrontendUrl;
-    } else {
-      frontendUrl = config.adminFrontendUrl;
+    if (user.role === "ADMIN") {
+      frontendUrl = `${config.adminFrontendUrl}/auth/reset-password/?token=${resetToken}`;
+    } else if (user.role === "INVESTOR") {
+      frontendUrl = `${config.userFrontendUrl}/auth/reset-password/?resetToken=${resetToken}`;
     }
 
-    console.log("🚀 ~ forgotPassword ~ frontendUrl:", frontendUrl);
-
-    const resetLink = `${frontendUrl}/auth/reset-password?token=${resetToken}`;
+    const resetLink = `${frontendUrl}`;
 
     await sendEmail(user.email, emailTemplateId.resetPassword, {
       resetLink,
@@ -333,16 +393,16 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-// Reset Password API
 const resetPassword = async (req, res) => {
   try {
     const { newPassword, confirmPassword } = req.body;
     const token = req.params.token;
+    console.log("🚀 ~ resetPassword ~ token:", token);
 
     const user = await User.findOne({
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: Date.now() },
-    });
+    }).exec();
 
     if (!user) {
       return httpResponse(
@@ -353,7 +413,6 @@ const resetPassword = async (req, res) => {
       );
     }
 
-    // Validate passwords match
     if (newPassword !== confirmPassword) {
       return httpResponse(
         res,
@@ -363,11 +422,9 @@ const resetPassword = async (req, res) => {
       );
     }
 
-    // Hash the new password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
 
-    // Clear the reset token and expiry
     user.resetPasswordToken = "";
     user.resetPasswordExpires = "";
 
@@ -375,13 +432,13 @@ const resetPassword = async (req, res) => {
 
     return httpResponse(res, statusCode.ok, true, message.passwordUpdated);
   } catch (error) {
+    console.log("🚀 ~ resetPassword ~ error:", error.message);
     return httpResponse(res, statusCode.badRequest, false, error.message);
   }
 };
 
 const addWalletAddress = async (req, res) => {
   try {
-    console.log("🚀 ~ addWalletAddress ~ API");
     const walletAddress = req.body.walletAddress;
 
     const walletExists = await User.findOne({
@@ -408,11 +465,6 @@ const addWalletAddress = async (req, res) => {
         { user, accessToken, refreshToken }
       );
     }
-    const statusHistory = {
-      status: status.NEW,
-      timestamp: Date.now(),
-      reason: "",
-    };
 
     const investor = await User.create({
       walletAddress,
@@ -421,7 +473,6 @@ const addWalletAddress = async (req, res) => {
       isKycVerified: false,
       isActive: true,
       status: status.NEW,
-      statusHistory: statusHistory,
     });
     const accessToken = await jwtSign(
       investor,
@@ -443,7 +494,6 @@ const addWalletAddress = async (req, res) => {
       { user, accessToken, refreshToken }
     );
   } catch (error) {
-    console.log("error here ===>", error);
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
@@ -452,8 +502,7 @@ const refreshToken = async (req, res) => {
   try {
     const { refreshToken } = req.body;
     const decoded = jwt.verify(refreshToken, config.refreshTokenSecret);
-    console.log("🚀 ~ refreshToken ~ decoded:", decoded);
-    const userData = await User.findById(decoded.id);
+    const userData = await User.findById(decoded.id).exec();
     if (!userData) {
       return httpResponse(
         res,
@@ -476,7 +525,7 @@ const refreshToken = async (req, res) => {
       res,
       statusCode.ok,
       true,
-      message.loginSuccessfully,
+      message.tokenRefreshedSuccessfully,
       responseData
     );
   } catch (error) {

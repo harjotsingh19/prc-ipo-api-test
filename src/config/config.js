@@ -3,7 +3,7 @@ require("dotenv").config();
 module.exports = {
   port: process.env.PORT || 3000,
   env: process.env.NODE_ENV || "development",
-  mongoUri: process.env.MONGO_URI || "mongodb://localhost:27017/rva",
+  mongoUri: process.env.MONGO_URI,
   redisUrl: process.env.REDIS_URI || "redis://localhost:6379",
   adminFrontendUrl: process.env.ADMIN_FRONTEND_URL,
   userFrontendUrl: process.env.USER_FRONTEND_URL,
@@ -17,4 +17,5 @@ module.exports = {
 
   //stripe
   STRIPE_TOKEN: process.env.STRIPE_TOKEN,
+  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
 };

@@ -3,10 +3,6 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
-    // name: {
-    //   type: String,
-    //   default: ""
-    // },
     firstName: {
       type: String,
       default: "",
@@ -23,12 +19,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    // phone: {
-    //   type: String,
-    // },
-    // countryCode: {
-    //   type: String,
-    // },
+
     role: {
       type: String,
       default: "",
@@ -39,26 +30,16 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    status: {
-      type: String,
-      default: "",
-    },
-    isVerified: {
-      type: Boolean,
-      default: false,
-    },
-    // isKycVerified: {
-    //   type: Boolean,
-    //   default: false
+    // status: {
+    //   type: String,
+    //   default: "",
     // },
+
     isEmailVerified: {
       type: Boolean,
       default: false,
     },
-    // isPhoneVerified: {
-    //   type: Boolean,
-    //   default: false
-    // },
+
     isActive: {
       type: Boolean,
       default: false,
@@ -67,21 +48,6 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    isDeactivated: {
-      type: Boolean,
-      default: false,
-    },
-    statusHistory: [
-      {
-        status: String,
-        timestamp: String,
-        reason: String,
-      },
-    ],
-    // sumsubApplicantId: {
-    //   type: String,
-    //   default: ""
-    // },
     resetPasswordToken: {
       type: String,
       default: "",
@@ -90,20 +56,12 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: "",
     },
-    // isMfaEnabled: {
-    //   type: Boolean,
-    //   default: false
-    // },
-    // mfaSecret: {
-    //   type: String,
-    //   default: null
-    // },
-    // isKycRejected: {
-    //   type: Boolean,
-    //   default: false
-    // },
     customerStripeId: {
       type: String,
+    },
+    isBlocked: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }

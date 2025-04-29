@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const config = require("../config/config");
 const { statusCode, message, roles } = require("../config/constants");
 const { httpResponse } = require("../middleware/responseHandler");
+const rateLimit = require("express-rate-limit");
 
 const auth = (req, res, next) => {
   try {
@@ -17,7 +18,9 @@ const auth = (req, res, next) => {
     } else {
       let accesstoken = token.split(" ");
       let decoded = jwt.verify(accesstoken[1], config.accessTokenSecret);
+      console.log("🚀 ~ auth ~ decoded:", decoded);
       req.data = decoded;
+      console.log("🚀 ~ decoded:", decoded);
       next();
     }
   } catch (err) {
@@ -31,12 +34,17 @@ const auth = (req, res, next) => {
   }
 };
 
-const isAdmin = (req, res) => {
+const isAdmin = (req, res, next) => {
   try {
     const userRole = req.data.role;
 
     if (userRole !== roles.ADMIN) {
-      throw new Error("Only Admin Can Access");
+      return httpResponse(
+        res,
+        statusCode.unAuthorized,
+        false,
+        message.userIsNotAdmin
+      );
     }
     next();
   } catch (error) {
@@ -49,4 +57,17 @@ const isAdmin = (req, res) => {
   }
 };
 
-module.exports = { auth, isAdmin };
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 3,
+  handler: (req, res, next) => {
+    return httpResponse(
+      res,
+      statusCode.tooManyRequest,
+      false,
+      message.tooManyRequests
+    );
+  },
+});
+
+module.exports = { auth, isAdmin, limiter };

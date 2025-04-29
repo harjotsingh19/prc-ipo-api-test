@@ -16,11 +16,11 @@ exports.result = (req, res, next) => {
   next();
 };
 
-exports.validateGetAllNotification = [
-  check("page").trim().notEmpty().bail().withMessage("Page is required."),
-  check("pageSize")
+exports.validatePurchaseToken = [
+  check("quantity")
     .trim()
     .notEmpty()
     .bail()
-    .withMessage("Page size is required."),
+    .withMessage("Quantity is required."),
+  check("saleId").trim().notEmpty().bail().withMessage("Sale Id is required."),
 ];

@@ -3,16 +3,31 @@ const router = express.Router();
 const adminController = require("../controllers/adminController");
 const { auth, isAdmin } = require("../middleware/auth");
 const adminValidator = require("../utils/validators/admin");
-const { isAmin } = require("../utils/helper");
 
 router.get(
   "/investors",
   auth,
-  [adminValidator.validateInvestorsList, adminValidator.result],
+  isAdmin,
+  [
+    adminValidator.handleInvestorQuery,
+    adminValidator.validateInvestorsList,
+    adminValidator.result,
+  ],
   adminController.getInvestors
 );
+
+router.get(
+  "/investors/:id",
+  auth,
+  isAdmin,
+  adminValidator.commonIdValidate,
+  adminValidator.result,
+  adminController.getInvestorById
+);
+
 router.get("/investments", auth, adminController.getAllInvestments);
-// router.post("/sale/create", auth, adminController.createSale)
+
+router.get("/investments/:id", auth, adminController.getInvestmentDetails);
 
 router.post(
   "/sales",
@@ -21,33 +36,33 @@ router.post(
   [adminValidator.validateCreateSale, adminValidator.result],
   adminController.createSale
 );
+router.get(
+  "/sales/airdrop/:id",
+  auth,
+  isAdmin,
+  [
+    [...adminValidator.validateSaleList, ...adminValidator.commonIdValidate],
+    adminValidator.result,
+  ],
+  adminController.getSalesAirDropTransactions
+);
+
+router.put(
+  "/sales/airdrop",
+  auth,
+  isAdmin,
+  [
+    adminValidator.validateUpdateSalesAirDropTransactions,
+    adminValidator.result,
+  ],
+  adminController.updateSalesAirDropTransactions
+);
 
 router.get(
   "/sales",
   auth,
   [adminValidator.validateSaleList, adminValidator.result],
   adminController.getSales
-);
-router.get(
-  "/investorKyc",
-  auth,
-  [adminValidator.validateInvestorKYCList, adminValidator.result],
-  adminController.getInvestorKyc
-);
-router.post("/setAdminAddress", auth, adminController.setAdminAddress);
-router.get("/token", adminController.getTokenDetails);
-router.post("/token", adminController.createToken);
-router.get(
-  "/address-whitelist",
-  auth,
-  [adminValidator.validateWhitelistAddressList, adminValidator.result],
-  adminController.getAllAddressWhitelist
-);
-router.get(
-  "/investors-investments/:walletAddress",
-  auth,
-  [adminValidator.validateInvestorsInvestmentsList, adminValidator.result],
-  adminController.getOneInvestorAllInvestments
 );
 
 router.get(
@@ -56,39 +71,21 @@ router.get(
   [adminValidator.validateStatisticsList, adminValidator.result],
   adminController.getSaleStatistics
 );
-router.get("/user-analytics/:userId", auth, adminController.getUserAnalytics);
-router.get("/dashboard", auth, adminController.dashboard);
-router.get(
-  "/distribution-analytics/:saleId",
-  auth,
-  adminController.getDistributionAnalytics
-);
-router.patch("/investorKyc/:id", auth, adminController.updateInvestorKycStatus);
-router.get(
-  "/address-blacklist",
-  auth,
-  [adminValidator.validateWhitelistAddressList, adminValidator.result],
-  adminController.getAllAddressBlacklist
-);
-router.patch(
-  "/investor/onchain-id/:userId",
-  auth,
-  [adminValidator.validateInvestorOnchainId, adminValidator.result],
-  adminController.updateInvestorOnchainId
-);
-router.get(
-  "/claim-token-history",
-  auth,
-  [adminValidator.validateClaimTokenHistoryList, adminValidator.result],
-  adminController.getClaimTokenHistory
-);
-router.get("/download-investments", adminController.downloadInvestments);
-
+router.get("/dashboard", auth, isAdmin, adminController.dashboard);
 router.patch(
   "/user-status/:id",
   auth,
   [adminValidator.validateUserStatus, adminValidator.result],
   adminController.updateUserStatus
+);
+
+router.get("/transactions", auth, isAdmin, adminController.transactions);
+
+router.get(
+  "/download-investments",
+  auth,
+  isAdmin,
+  adminController.downloadInvestments
 );
 
 module.exports = router;

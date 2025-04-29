@@ -16,6 +16,14 @@ exports.result = (req, res, next) => {
   next();
 };
 
+exports.handleInvestorQuery = (req, res, next) => {
+  if (req.query.investorId) {
+    req.query.page = "1";
+    req.query.pageSize = "10";
+  }
+  next();
+};
+
 exports.validateInvestorsList = [
   check("page").trim().notEmpty().bail().withMessage("Page is required."),
   check("pageSize")
@@ -76,13 +84,13 @@ exports.validateStatisticsList = [
 ];
 
 exports.validateCreateSale = [
-  check("name").trim().notEmpty().bail().withMessage("saleId is required."),
-  check("startTime")
+  check("name").trim().notEmpty().bail().withMessage("sale name is required."),
+  check("startDate")
     .trim()
     .notEmpty()
     .bail()
-    .withMessage("startTime is required."),
-  check("endTime").trim().notEmpty().bail().withMessage("endTime is required."),
+    .withMessage("startDate is required."),
+  check("endDate").trim().notEmpty().bail().withMessage("endDate is required."),
   check("tokenPrice")
     .trim()
     .notEmpty()
@@ -119,4 +127,22 @@ exports.validateUserStatus = [
     .withMessage("isBlocked is required.")
     .isBoolean()
     .withMessage("isBlocked must be a boolean value"),
+];
+
+exports.validateUpdateSalesAirDropTransactions = [
+  check("userIds")
+    .isArray({ min: 1 })
+    .withMessage("userIds must be a non-empty array.")
+    .custom((userIds) => {
+      if (!userIds.every((id) => /^[a-fA-F0-9]{24}$/.test(id))) {
+        throw new Error("Each userId must be a valid MongoDB ObjectId.");
+      }
+      return true;
+    }),
+  check("saleId")
+    .trim()
+    .notEmpty()
+    .withMessage("saleId is required.")
+    .matches(/^[a-fA-F0-9]{24}$/)
+    .withMessage("saleId must be a valid MongoDB ObjectId."),
 ];

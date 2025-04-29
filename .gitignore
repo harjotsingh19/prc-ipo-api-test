@@ -79,5 +79,17 @@ insert-data.json
 
 sonar-project.properties
 
+docker-compose-mongo.yaml
+
+docker-compose-sonar-scanner.yaml
+
+docker-compose-sonar.yaml
+
+admin-investors.txt
+
 .scannerwork
 
+.env.local
+
+
+.env

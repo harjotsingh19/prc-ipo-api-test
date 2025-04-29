@@ -14,7 +14,6 @@ exports.sendEmail = async (recipient, templateId, template_data) => {
     templateId,
     dynamicTemplateData: template_data,
   };
-  console.log("🚀 ~ exports.sendEmail= ~ emailBody:", emailBody);
   try {
     const response = await sendGridMail.send(emailBody);
     return response;

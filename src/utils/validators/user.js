@@ -17,14 +17,13 @@ exports.result = (req, res, next) => {
 };
 
 exports.validateUpdateProfile = [
-  // check('name').trim().notEmpty().bail().withMessage('Name is required.'),
   check("firstName")
     .optional()
     .trim()
     .notEmpty()
     .withMessage("First name is required.")
     .isLength({ min: 2 })
-    .withMessage("First name must be at least 2 characters long."),
+    .withMessage("First name must be at least 2 characters long"),
 
   check("lastName")
     .optional()
@@ -32,7 +31,7 @@ exports.validateUpdateProfile = [
     .notEmpty()
     .withMessage("Last name is required.")
     .isLength({ min: 2 })
-    .withMessage("Last name must be at least 2 characters long."),
+    .withMessage("Last name must be at least 2 characters long"),
 
   check("email")
     .optional()
@@ -43,17 +42,6 @@ exports.validateUpdateProfile = [
     .isEmail()
     .bail()
     .withMessage("enter a valid email address"),
-  // .custom(async (value) => {
-  //   console.log("🚀 ~ Validator ~ .custom ~ value:", value)
-  //   const user = await User.findOne({
-  //     email: value.toLowerCase(),
-  //     isEmailVerified: true,
-  //   });
-  //   if (user) {
-  //     throw new Error(message.emailAlreadyExist);
-  //   }
-  //   console.log("🚀 ~ Validator ~ .custom email ~ user:");
-  // }),
 
   check("mobile")
     .optional()
@@ -66,16 +54,8 @@ exports.validateUpdateProfile = [
     .withMessage("mobile number should be of 10 digits")
     .isNumeric()
     .bail()
-    .withMessage("Mobile can contain digits only")
-    .custom(async (value) => {
-      const user = await User.findOne({
-        mobile: value,
-        isMobileVerified: true,
-      });
-      if (user) {
-        throw new Error(message.mobileAlreadyExists);
-      }
-    }),
+    .withMessage("Mobile can contain digits only"),
+
   check("password")
     .optional()
     .trim()
@@ -87,7 +67,7 @@ exports.validateUpdateProfile = [
     .withMessage("Password is too small, at least 8 characters required")
     .matches(/^(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z]).{8,}$/)
     .bail()
-    .withMessage("Enter a strong password"),
+    .withMessage("Enter a strong password."),
 ];
 
 exports.validateChangePassword = [
@@ -124,10 +104,10 @@ exports.validateLogout = [
     .withMessage("deviceId is required."),
 ];
 
-exports.validateLogout = [
+exports.validateAddWallet = [
   check("walletAddress")
     .trim()
     .notEmpty()
     .bail()
-    .withMessage("walletAddress is required."),
+    .withMessage("Wallet address is required."),
 ];

@@ -9,42 +9,20 @@ const handleCheckoutSessionCompleted = async (event) => {
   const session = event.data.object;
   console.log("🚀 ~ handleCheckoutSessionCompleted ~ session:", session);
 
-  console.log(
-    "🚀 ~ handleCheckoutSessionCompleted ~ session.",
-    session.payment_method_options
-  );
-  console.log(
-    "🚀 ~ handleCheckoutSessionCompleted ~ session.payment_method_types:",
-    session.payment_method_types
-  );
-  console.log(
-    "🚀 ~ handleCheckoutSessionCompleted ~  session.invoice:",
-    session.invoice
-  );
-
   try {
     const {
       id: sessionId,
       payment_intent: paymentIntentId,
       customer: customerId,
       metadata,
-      amount_total: amountTotal,
       currency,
       payment_status: paymentStatus,
     } = session;
 
     const userId = metadata.userId;
     const saleId = metadata.saleId;
-    const tokenIn = parseInt(metadata.quantity, 10);
-    console.log("🚀 ~ handleCheckoutSessionCompleted ~ tokenIn:", tokenIn);
-    const tokenPriceInCents = parseInt(metadata.price, 10);
-    const tokenOut = (tokenPriceInCents * tokenIn) / 100;
-    console.log("🚀 ~ handleCheckoutSessionCompleted ~ tokenOut:", tokenOut);
-
-    console.log(
-      "🚀 ~ handleCheckoutSessionCompleted ~ session.paymentStatus:",
-      session.payment_status
-    );
+    const tokenIn = metadata.tokenIn;
+    const tokenOut = metadata.tokenOut;
 
     if (session.payment_status !== "paid") {
       return httpResponse(
@@ -56,7 +34,7 @@ const handleCheckoutSessionCompleted = async (event) => {
     }
     console.error("metadata in session:", session.metadata);
 
-    if (!userId || !tokenIn || !tokenPriceInCents) {
+    if (!userId || !tokenIn || !tokenOut) {
       return httpResponse(
         null,
         statusCode.badRequest,
@@ -66,7 +44,7 @@ const handleCheckoutSessionCompleted = async (event) => {
     }
     console.error("Token document not found");
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).exec();
     if (!user) {
       console.error("User not found for ID:", userId);
       return httpResponse(
@@ -77,7 +55,7 @@ const handleCheckoutSessionCompleted = async (event) => {
       );
     }
 
-    user.tokenBalance += tokenIn;
+    user.tokenBalance += Number(tokenIn);
     await user.save();
 
     console.log("User token balance updated:", user.tokenBalance);
@@ -85,77 +63,61 @@ const handleCheckoutSessionCompleted = async (event) => {
     const transaction = new Transaction({
       userId,
       paymentIntentId,
-      saleId: metadata.saleId,
+      saleId: saleId,
       tokenIn,
-      tokenOut: tokenOut.toFixed(2),
-      paymentStatus: "completed",
-      paymentType: "Stripe Checkout",
+      tokenOut,
+      paymentStatus: "Paid",
       transactionDate: new Date(),
     });
     await transaction.save();
 
     console.log("Transaction saved:", transaction);
-    let token = await Token.findOne();
+    let token = await Token.findOne().exec();
     if (!token) {
       console.log("Token document not found. Creating a new one...");
       token = new Token({
         tokenName: "PRC Coin",
         tokenSymbol: "PRC",
-        totalSupply: 1000000000, // Example total supply
+        totalSupply: 1000000000,
         fundsRaised: 0,
-        availableTokens: 1000000000, // Initially equal to total supply
+        availableTokens: 1000000000,
         claimedTokens: 0,
       });
     }
 
-    token.claimedTokens += tokenIn;
-    token.availableTokens -= tokenIn;
-    token.fundsRaised += tokenOut;
+    token.claimedTokens += Number(tokenIn);
+    token.fundsRaised += Number(tokenOut);
     await token.save();
 
     console.log("Token document updated:", token);
 
     console.log("Token document updated:", token);
-    // Save session data in StripeSessionPayment schema
-    const stripeSessionPayment = new StripeSessionPayment({
-      sessionId,
-      paymentIntentId,
-      customerId,
-      tokenOut,
-      currency,
-      paymentStatus,
-      userId,
-      saleId,
-      metadata,
-      eventType: "checkout.session.completed",
-      // invoiceDetails: {
-      //   invoiceId: session.invoice?.id || null,
-      //   amountDue: session.invoice?.amount_due
-      //     ? session.invoice.amount_due / 100
-      //     : null,
-      //   amountPaid: session.invoice?.amount_paid
-      //     ? session.invoice.amount_paid / 100
-      //     : null,
-      //   created: session.invoice?.created
-      //     ? new Date(session.invoice.created * 1000)
-      //     : null,
-      //   currency: session.invoice?.currency || null,
-      //   customerId: session.invoice?.customer || null,
-      //   customerEmail: session.invoice?.customer_email || null,
-      //   customerName: session.invoice?.customer_name || null,
-      //   // invoiceUrl: session.invoice?.hosted_invoice_url || null,
-      //   // invoicePdf: session.invoice?.invoice_pdf || null,
-      //   paid: session.invoice?.paid || null,
-      //   paymentIntent: session.invoice?.payment_intent || null,
-      //   status: session.invoice?.status || null,
-      //   statementDescriptor: session.invoice?.statement_descriptor || null,
-      //   subtotal: session.invoice?.subtotal
-      //     ? session.invoice.subtotal / 100
-      //     : null,
-      //   total: session.invoice?.total ? session.invoice.total / 100 : null,
-      // },
-    });
-    await stripeSessionPayment.save();
+
+    const stripeSessionPayment = await StripeSessionPayment.findOneAndUpdate(
+      { sessionId }, // Find the session by its sessionId
+      {
+        sessionId,
+        paymentIntentId,
+        customerId,
+        tokenIn,
+        tokenOut,
+        currency,
+        paymentStatus,
+        userId,
+        saleId,
+        metadata,
+        eventType: "checkout.session.completed",
+        email: session.customer_details.email || null,
+        sessionCreationTime: session.created,
+        sessionExpirationTime: session.expires_at || null,
+        failureReason: session.failure_reason || null,
+        expirationTime: session.expires_at
+          ? new Date(session.expires_at * 1000)
+          : null,
+        status: session.status,
+      },
+      { new: true, upsert: true } // Return the updated document, do not create a new one
+    );
 
     console.log("Stripe session payment saved:", stripeSessionPayment);
 
@@ -184,8 +146,11 @@ const handleCheckoutSessionExpired = async (event) => {
       customerId: session.customer || null,
       userId: session.metadata?.userId || null,
       saleId: session.metadata?.saleId || null,
+      email: sessionData.customer_details.email || null,
       expirationTime: new Date(),
       metadata: session.metadata || null,
+      sessionCreationTime: sessionData.created || null,
+      sessionExpirationTime: sessionData.expires_at || null,
       paymentIntentId: session.payment_intent || null,
       eventType: "checkout.session.expired",
     });

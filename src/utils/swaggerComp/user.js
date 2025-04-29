@@ -1,59 +1,4 @@
 const { apiResponse } = require("./common");
-const enableMFA = {
-  patch: {
-    tags: ["User"],
-    security: [{ bearerAuth: [] }],
-    summary: "Enable multi factor authentication",
-    description: "Enable multi factor authentication",
-    operationId: "enableMFA",
-    parameters: [
-      {
-        in: "path",
-        name: "id",
-        required: true,
-        description: "Enter user id",
-        schema: {
-          type: "string",
-        },
-      },
-    ],
-    responses: apiResponse,
-  },
-};
-
-const verifyMFA = {
-  post: {
-    tags: ["User"],
-    summary: "Verify multi factor authentication",
-    description: "Verify multi factor authentication",
-    operationId: "verifyMFA",
-    parameters: [
-      {
-        in: "path",
-        name: "id",
-        required: true,
-        description: "Enter user id",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "body",
-        name: "mfaData",
-        schema: {
-          type: "object",
-          required: ["otp"],
-          properties: {
-            otp: {
-              type: "number",
-            },
-          },
-        },
-      },
-    ],
-    responses: apiResponse,
-  },
-};
 
 const updateProfile = {
   patch: {
@@ -229,8 +174,6 @@ const addWallet = {
 };
 
 module.exports = {
-  enableMFA,
-  verifyMFA,
   updateProfile,
   addUserActivity,
   getUserProfile,
