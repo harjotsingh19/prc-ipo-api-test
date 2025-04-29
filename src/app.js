@@ -10,6 +10,7 @@ const swaggerJsDoc = require("swagger-jsdoc");
 const { swaggerDefinition } = require("./utils/swagger.js");
 require("./db/mongoose");
 require("./utils/saleScheduler.js"); // Start Cron Job
+require("./utils/addWalletScheduler.js");
 const swaggerSpec = swaggerJsDoc(swaggerDefinition);
 const rateLimit = require("express-rate-limit");
 
