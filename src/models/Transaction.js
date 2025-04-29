@@ -50,6 +50,9 @@ const txnSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    paymentHash: {
+      type: String, // e.g., 'credit card', 'debit card', 'bank transfer', etc.
+    },
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
 );
