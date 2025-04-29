@@ -29,7 +29,7 @@ router.put(
 router.put(
   "/wallet",
   auth,
-  [userValidator.validateLogout, userValidator.result],
+  [userValidator.validateAddWallet, userValidator.result],
   userController.addWallet
 );
 

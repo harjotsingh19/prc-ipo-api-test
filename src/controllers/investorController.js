@@ -6,8 +6,6 @@ const Transaction = require("../models/Transaction");
 const tokenVesting = require("../models/tokenVesting");
 const TokenClaimHistory = require("../models/TokenClaimHistory");
 
-// get user's all/single investments
-
 const getInvestments = async (req, res) => {
   try {
     let condition = {};
@@ -70,8 +68,8 @@ const getInvestments = async (req, res) => {
           "transactions.created_at": 1,
           "transactions.saleDetails._id": 1,
           "transactions.saleDetails.name": 1,
-          "transactions.saleDetails.startTime": 1,
-          "transactions.saleDetails.endTime": 1,
+          "transactions.saleDetails.startDate": 1,
+          "transactions.saleDetails.endDate": 1,
           "transactions.saleDetails.tokenPrice": 1,
         },
       },

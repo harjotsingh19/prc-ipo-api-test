@@ -1,163 +1,24 @@
 const Sale = require("../../models/Sale");
 const { apiResponse } = require("./common");
 
-const getInvestors = {
+const commonGetConfig = (summary, description, operationId, parameters) => ({
   get: {
     tags: ["Admin"],
     security: [{ bearerAuth: [] }],
-    summary: "Get investors listing",
-    description: "Get investors listing",
-    operationId: "getInvestors",
-    parameters: [
-      {
-        in: "query",
-        name: "page",
-        // required: true,
-        description: "Enter page number",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "pageSize",
-        // required: true,
-        description: "Enter page size",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "investorId",
-        description: "Enter investorId",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "isBlocked",
-        description: "Filter by blocked status (true/false)",
-        schema: {
-          type: "string",
-          enum: ["true", "false"],
-        },
-      },
-    ],
+    summary,
+    description,
+    operationId,
+    parameters,
     responses: apiResponse,
   },
-};
+});
 
-const updateUserStatus = {
-  patch: {
-    tags: ["Admin"],
-    security: [{ bearerAuth: [] }],
-    summary: "Update User Status",
-    description: "Allows an admin to block or unblock a user.",
-    operationId: "updateUserStatus",
-    parameters: [
-      {
-        in: "path",
-        name: "id",
-        required: true,
-        description: "The ID of the user to update.",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "body",
-        name: "userData",
-        required: true,
-        description: "The data to update the user's status.",
-        schema: {
-          type: "object",
-          required: ["isBlocked"],
-          properties: {
-            isBlocked: {
-              type: "boolean",
-              description: "Set to true to block the user, false to unblock.",
-            },
-          },
-        },
-      },
-    ],
-    responses: apiResponse,
-  },
-};
-
-module.exports = {
-  // ...existing exports
-  updateUserStatus,
-};
-
-const getInvestmentsById = {
-  get: {
-    tags: ["Admin"],
-    security: [{ bearerAuth: [] }],
-    summary: "Get Investment details",
-    description: "Get Investemnt details",
-    operationId: "getInvestmentDetails",
-    parameters: [
-      {
-        in: "path",
-        name: "id",
-        required: true,
-        description: "Enter id",
-        schema: {
-          type: "string",
-        },
-      },
-    ],
-    responses: apiResponse,
-  },
-};
-
-const getAllInvestments = {
-  get: {
-    tags: ["Admin"],
-    security: [{ bearerAuth: [] }],
-    summary: "Get Investments listing",
-    description: "Get Investments listing",
-    operationId: "getAllInvestments",
-    parameters: [
-      {
-        in: "query",
-        name: "filter",
-        description: "Enter filter value (eg. last10, top10)",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "page",
-        description: "Enter page number",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "pageSize",
-        description: "Enter page size",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "saleId",
-        description: "Enter sale id",
-        schema: {
-          type: "string",
-        },
-      },
-    ],
-    responses: apiResponse,
-  },
-};
+const downloadInvestments = commonGetConfig(
+  "Download Investments PDF",
+  "Download all investment transactions as a PDF file",
+  "downloadInvestments",
+  []
+);
 
 const getSales = {
   get: {
@@ -224,6 +85,271 @@ const getSales = {
           type: "integer",
         },
         description: '[{"id":"username","desc":true}]',
+      },
+    ],
+    responses: apiResponse,
+  },
+};
+
+const getAirdrop = commonGetConfig(
+  "Get Sale Air drop listing",
+  "Get Sale Air drop listing",
+  "getAllSaleAirdrop",
+  [
+    {
+      in: "path",
+      name: "id",
+      required: true,
+      description: "Enter sale Id",
+      schema: {
+        type: "string",
+      },
+    },
+    {
+      in: "query",
+      name: "page",
+      required: true,
+      description: "Enter page number",
+      schema: {
+        type: "string",
+      },
+    },
+    {
+      in: "query",
+      name: "pageSize",
+      required: true,
+      description: "Enter page size",
+      schema: {
+        type: "string",
+      },
+    },
+  ]
+);
+
+const getInvestorById = commonGetConfig(
+  "Get Investor details by ID",
+  "Get Investor details by ID, including transactions",
+  "getInvestorById",
+  [
+    {
+      in: "query",
+      name: "investorId",
+      required: true,
+      description: "Enter investor ID",
+      schema: {
+        type: "string",
+      },
+    },
+    {
+      in: "query",
+      name: "sortBy",
+      description:
+        "Field to sort transactions by (e.g., transactionDate, tokenIn, tokenOut)",
+      schema: {
+        type: "string",
+        default: "transactionDate",
+      },
+    },
+    {
+      in: "query",
+      name: "sortOrder",
+      description: "Sort order for transactions (asc or desc)",
+      schema: {
+        type: "string",
+        enum: ["asc", "desc"],
+        default: "desc",
+      },
+    },
+    {
+      in: "query",
+      name: "page",
+      description: "Page number for transactions",
+      schema: {
+        type: "integer",
+        default: 1,
+      },
+    },
+    {
+      in: "query",
+      name: "limit",
+      description: "Number of transactions per page",
+      schema: {
+        type: "integer",
+        default: 10,
+      },
+    },
+  ]
+);
+
+const getInvestors = commonGetConfig(
+  "Get investors listing",
+  "Get investors listing",
+  "getInvestors",
+  [
+    {
+      in: "query",
+      name: "page",
+      schema: { type: "integer", default: 1 },
+      description: "Page number",
+    },
+    {
+      in: "query",
+      name: "pageSize",
+      schema: { type: "integer", default: 10 },
+      description: "Number of items per page",
+    },
+    {
+      in: "query",
+      name: "investorId",
+      schema: { type: "string" },
+      description: "Filter by investor ID",
+    },
+    {
+      in: "query",
+      name: "isBlocked",
+      schema: { type: "boolean" },
+      description: "Filter by blocked status",
+    },
+    {
+      in: "query",
+      name: "sortBy",
+      schema: { type: "string" },
+      description:
+        "Field to sort by (e.g., firstName, lastName, email, tokenIn, tokenOut)",
+    },
+    {
+      in: "query",
+      name: "sortOrder",
+      schema: { type: "string", enum: ["asc", "desc"] },
+      description: "Sort order (asc or desc)",
+    },
+    {
+      in: "query",
+      name: "search",
+      schema: { type: "string" },
+      description:
+        "Search term for firstName, lastName, email, or walletAddress",
+    },
+  ]
+);
+
+const getAllInvestments = commonGetConfig(
+  "Get Investments listing",
+  "Get Investments listing",
+  "getAllInvestments",
+  [
+    {
+      in: "query",
+      name: "filter",
+      description: "Filter investments (e.g., last10, top10)",
+      schema: { type: "string" },
+    },
+    {
+      in: "query",
+      name: "page",
+      description: "Page number for pagination (default: 1)",
+      schema: { type: "integer" },
+    },
+    {
+      in: "query",
+      name: "pageSize",
+      description: "Number of records per page (default: 10)",
+      schema: { type: "integer" },
+    },
+    {
+      in: "query",
+      name: "saleId",
+      description: "Filter by Sale ID (MongoDB ObjectId)",
+      schema: { type: "string" },
+    },
+    {
+      in: "query",
+      name: "search",
+      description: "Search by user name, email or sale name",
+      schema: { type: "string" },
+    },
+    {
+      in: "query",
+      name: "sortBy",
+      description: "Sort field (transactionDate, tokenIn, tokenOut)",
+      schema: {
+        type: "string",
+        enum: ["transactionDate", "tokenIn", "tokenOut"],
+        default: "transactionDate",
+      },
+    },
+    {
+      in: "query",
+      name: "sortOrder",
+      description: "Sort order (asc or desc)",
+      schema: {
+        type: "string",
+        enum: ["asc", "desc"],
+        default: "desc",
+      },
+    },
+  ]
+);
+
+const updateUserStatus = {
+  patch: {
+    tags: ["Admin"],
+    security: [{ bearerAuth: [] }],
+    summary: "Update User Status",
+    description: "Allows an admin to block or unblock a user.",
+    operationId: "updateUserStatus",
+    parameters: [
+      {
+        in: "path",
+        name: "id",
+        required: true,
+        description: "The ID of the user to update.",
+        schema: {
+          type: "string",
+        },
+      },
+      {
+        in: "body",
+        name: "userData",
+        required: true,
+        description: "The data to update the user's status.",
+        schema: {
+          type: "object",
+          required: ["isBlocked"],
+          properties: {
+            isBlocked: {
+              type: "boolean",
+              description: "Set to true to block the user, false to unblock.",
+            },
+          },
+        },
+      },
+    ],
+    responses: apiResponse,
+  },
+};
+
+module.exports = {
+  // ...existing exports
+  updateUserStatus,
+};
+
+const getInvestmentsById = {
+  get: {
+    tags: ["Admin"],
+    security: [{ bearerAuth: [] }],
+    summary: "Get Investment details",
+    description: "Get Investemnt details",
+    operationId: "getInvestmentDetails",
+    parameters: [
+      {
+        in: "path",
+        name: "id",
+        required: true,
+        description: "Enter id",
+        schema: {
+          type: "string",
+        },
       },
     ],
     responses: apiResponse,
@@ -301,16 +427,16 @@ const createSale = {
         name: "saleData",
         schema: {
           type: "object",
-          required: ["name", "startTime", "endTime", "tokenPrice"],
+          required: ["name", "startDate", "endDate", "tokenPrice"],
           properties: {
             name: {
               type: "string",
             },
-            startTime: {
+            startDate: {
               type: "string",
               format: "date-time",
             },
-            endTime: {
+            endDate: {
               type: "string",
               format: "date-time",
             },
@@ -380,37 +506,6 @@ const createGetToken = {
   },
 };
 
-const whitelistWalletAddress = {
-  get: {
-    tags: ["Admin"],
-    security: [{ bearerAuth: [] }],
-    summary: "Get Whitelist wallet address list",
-    description: "Get Whitelist wallet address list",
-    operationId: "whitelistWalletAddressList",
-    parameters: [
-      {
-        in: "query",
-        name: "page",
-        required: true,
-        description: "Enter page number",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "pageSize",
-        required: true,
-        description: "Enter page size",
-        schema: {
-          type: "string",
-        },
-      },
-    ],
-    responses: apiResponse,
-  },
-};
-
 const setAdminWalletAddress = {
   post: {
     tags: ["Admin"],
@@ -430,114 +525,6 @@ const setAdminWalletAddress = {
               type: "string",
             },
           },
-        },
-      },
-    ],
-    responses: apiResponse,
-  },
-};
-
-const investorKyc = {
-  get: {
-    tags: ["Admin"],
-    security: [{ bearerAuth: [] }],
-    summary: "Get investors KYC list",
-    description: "Get investors KYC list",
-    operationId: "investorKycList",
-    parameters: [
-      {
-        in: "query",
-        name: "page",
-        required: true,
-        description: "Enter page number",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "pageSize",
-        required: true,
-        description: "Enter page size",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "status",
-        description: "Enter status",
-        schema: {
-          type: "string",
-        },
-      },
-    ],
-    responses: apiResponse,
-  },
-};
-
-const investorKycUpdate = {
-  patch: {
-    tags: ["Admin"],
-    security: [{ bearerAuth: [] }],
-    summary: "Investors KYC Update",
-    description: "Investors KYC Update",
-    operationId: "investorKycStatusUpdate",
-    parameters: [
-      {
-        in: "path",
-        name: "id",
-        required: true,
-        description: "Enter investor id",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "body",
-        name: "data",
-        require: ["status"],
-        schema: {
-          type: "object",
-          properties: {
-            status: {
-              type: "string",
-            },
-            reason: {
-              type: "string",
-            },
-          },
-        },
-      },
-    ],
-    responses: apiResponse,
-  },
-};
-
-const getSaleStatistics = {
-  get: {
-    tags: ["Analytics"],
-    security: [{ bearerAuth: [] }],
-    summary: "Get sale statistics list",
-    description: "Get sale statistics list",
-    operationId: "saleStatistics",
-    parameters: [
-      {
-        in: "query",
-        name: "page",
-        required: true,
-        description: "Enter page number",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "pageSize",
-        required: true,
-        description: "Enter page size",
-        schema: {
-          type: "string",
         },
       },
     ],
@@ -575,37 +562,6 @@ const dashboard = {
     description: "Get dashboard data",
     operationId: "dashboard",
     parameters: [],
-    responses: apiResponse,
-  },
-};
-
-const getBlacklistAddressList = {
-  get: {
-    tags: ["Admin"],
-    security: [{ bearerAuth: [] }],
-    summary: "Get Blacklist wallet address list",
-    description: "Get Blacklist wallet address list",
-    operationId: "blacklistWalletAddressList",
-    parameters: [
-      {
-        in: "query",
-        name: "page",
-        required: true,
-        description: "Enter page number",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "pageSize",
-        required: true,
-        description: "Enter page size",
-        schema: {
-          type: "string",
-        },
-      },
-    ],
     responses: apiResponse,
   },
 };
@@ -667,45 +623,6 @@ const updateInvestorOnchainId = {
   },
 };
 
-const getClaimTokenHistory = {
-  get: {
-    tags: ["Admin"],
-    security: [{ bearerAuth: [] }],
-    summary: "Get claim token history list",
-    description: "Get claim token history list",
-    operationId: "getClaimTokenHistory",
-    parameters: [
-      {
-        in: "query",
-        name: "page",
-        required: true,
-        description: "Enter page number",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "pageSize",
-        required: true,
-        description: "Enter page size",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "investorAddress",
-        description: "Enter investor Address",
-        schema: {
-          type: "string",
-        },
-      },
-    ],
-    responses: apiResponse,
-  },
-};
-
 const downloadPdf = {
   get: {
     tags: ["Admin"],
@@ -744,62 +661,6 @@ const getTransactions = {
           type: "string",
         },
       },
-      // {
-      //   in: "query",
-      //   name: "status",
-      //   schema: {
-      //     type: "string",
-      //   },
-      //   description: "The Status you have selected is Invalid.",
-      // },
-    ],
-    responses: apiResponse,
-  },
-};
-
-const getAirdrop = {
-  get: {
-    tags: ["Admin"],
-    security: [{ bearerAuth: [] }],
-    summary: "Get Sale Air drop listing",
-    description: "Get Sale Air drop listing",
-    operationId: "getAllSaleAirdrop",
-    parameters: [
-      {
-        in: "path",
-        name: "id",
-        required: true,
-        description: "Enter sale Id",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "page",
-        required: true,
-        description: "Enter page number",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "pageSize",
-        required: true,
-        description: "Enter page size",
-        schema: {
-          type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "status",
-        schema: {
-          type: "string",
-        },
-        description: "The Status you have selected is Invalid.",
-      },
     ],
     responses: apiResponse,
   },
@@ -835,23 +696,17 @@ const updateSaleTransactions = {
 };
 module.exports = {
   getInvestors,
-  // getInvestorInvestments,
   getInvestmentsById,
   getAllInvestments,
   getSales,
   createSale,
   createGetToken,
-  whitelistWalletAddress,
   setAdminWalletAddress,
-  investorKyc,
-  getSaleStatistics,
   getUserAnalytics,
   dashboard,
-  investorKycUpdate,
-  getBlacklistAddressList,
+  downloadInvestments,
   getDistributionAnalytics,
   updateInvestorOnchainId,
-  getClaimTokenHistory,
   downloadPdf,
   getSale,
   purchaseToken,
@@ -859,4 +714,5 @@ module.exports = {
   getAirdrop,
   updateSaleTransactions,
   updateUserStatus,
+  getInvestorById,
 };

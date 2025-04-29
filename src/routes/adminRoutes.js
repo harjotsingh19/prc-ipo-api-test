@@ -15,6 +15,16 @@ router.get(
   ],
   adminController.getInvestors
 );
+
+router.get(
+  "/investors/:id",
+  auth,
+  isAdmin,
+  adminValidator.commonIdValidate,
+  adminValidator.result,
+  adminController.getInvestorById
+);
+
 router.get("/investments", auth, adminController.getAllInvestments);
 
 router.get("/investments/:id", auth, adminController.getInvestmentDetails);
@@ -41,6 +51,10 @@ router.put(
   "/sales/airdrop",
   auth,
   isAdmin,
+  [
+    adminValidator.validateUpdateSalesAirDropTransactions,
+    adminValidator.result,
+  ],
   adminController.updateSalesAirDropTransactions
 );
 
@@ -66,5 +80,12 @@ router.patch(
 );
 
 router.get("/transactions", auth, isAdmin, adminController.transactions);
+
+router.get(
+  "/download-investments",
+  auth,
+  isAdmin,
+  adminController.downloadInvestments
+);
 
 module.exports = router;

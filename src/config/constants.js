@@ -29,6 +29,7 @@ const message = {
   adminAlreadyExists: "Admin already exists",
   userAlreadyExists: "User already exists",
   userEmailAlreadyExists: "A user with this email address already exists.",
+  singleInvestorReturned: "Investor returned",
 
   userNotCreatedOnStripe: "Error creating user on stripe",
   userDoesnotExists: "User doesn't exists",
@@ -78,6 +79,9 @@ const message = {
   allTransactionReturned: "All transaction Fetched Successfully",
   allTransactionUpdated: "Transaction Updated Successfully",
   saleNotActive: "Sale does not exist or is not active.",
+  ActiveSaleAlreadyExists: "Another active sale is already running.",
+  FutureSaleOverlapError:
+    "Another sale is scheduled to start within the time frame of the new sale. Please choose different start and end times to avoid overlapping with an existing future sale.",
 
   //stripe
   missingMetadata: "Required metadata is missing in the session.",
@@ -89,8 +93,9 @@ const message = {
   // Token
   tokenDetailsReturned: "Token details returned",
   tokenCreated: "Token created successfully",
-  tooManyRequests: "Too many requests from this IP. Please try after some time",
   icoFinalizedSuccess: "ICO finalized successfully",
+  tooManyRequests: "Too many requests from this IP. Please try after some time",
+
   tokenDocumentNotFound: "Token document not found.",
   tokensCreditedSuccessfully: "Tokens credited successfully.",
 
@@ -142,7 +147,6 @@ const statusCode = {
   noContent: 204,
   forbidden: 403,
   errorPage: 404,
-  tooManyRequest: 429,
   serverError: 500,
 };
 

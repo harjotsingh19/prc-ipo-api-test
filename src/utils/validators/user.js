@@ -104,10 +104,10 @@ exports.validateLogout = [
     .withMessage("deviceId is required."),
 ];
 
-exports.validateLogout = [
+exports.validateAddWallet = [
   check("walletAddress")
     .trim()
     .notEmpty()
     .bail()
-    .withMessage("walletAddress is required."),
+    .withMessage("Wallet address is required."),
 ];

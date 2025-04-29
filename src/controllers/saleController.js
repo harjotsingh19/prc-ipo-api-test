@@ -56,15 +56,18 @@ const purchaseToken = async (req, res) => {
       await userData.save();
     }
 
-    console.log("🚀 ~ purchaseToken ~ customerStripeId:", customerStripeId);
+    console.log(
+      "🚀 ~ purchaseToken ~ Number(amountPaid):",
+      Math.round(amountPaid)
+    );
 
     const checkoutSession = await createSession({
       customerId: customerStripeId,
-      amountPaid: Number(amountPaid), // in cents
+      amountPaid: Math.round(amountPaid), // in cents
       currency: "usd",
       mode: "payment",
-      successUrl: `${config.userFrontendUrl}/checkout?session_id={CHECKOUT_SESSION_ID}`,
-      errorUrl: `${config.userFrontendUrl}/cancel?session_id={CHECKOUT_SESSION_ID}`,
+      successUrl: `http://localhost:3000/docs/#/sale/purchaseToken`,
+      errorUrl: `http://localhost:3000/docs/#/sale/purchaseToken`,
       metaData: {
         userId: userId,
         tokenIn: Number(quantity),

@@ -6,10 +6,10 @@ const saleSchema = new mongoose.Schema(
     name: {
       type: String,
     },
-    startTime: {
+    startDate: {
       type: Date,
     },
-    endTime: {
+    endDate: {
       type: Date,
     },
     active: {
@@ -30,5 +30,7 @@ const saleSchema = new mongoose.Schema(
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
 );
+
+saleSchema.index({ startDate: 1, endDate: 1, active: 1 });
 
 module.exports = mongoose.model("Sale", saleSchema);

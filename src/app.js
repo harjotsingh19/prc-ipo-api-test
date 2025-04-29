@@ -9,12 +9,11 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
 const { swaggerDefinition } = require("./utils/swagger.js");
 require("./db/mongoose");
+require("./utils/saleScheduler.js"); // Start Cron Job
 const swaggerSpec = swaggerJsDoc(swaggerDefinition);
+const rateLimit = require("express-rate-limit");
 
 const { setUpSendGrid } = require("../src/utils/mailManager");
-const rateLimit = require("express-rate-limit");
-const { statusCode, message, roles } = require("./config/constants");
-const { httpResponse } = require("./middleware/responseHandler");
 
 const app = express();
 app.disable("x-powered-by");

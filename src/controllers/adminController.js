@@ -1,8 +1,11 @@
 const User = require("../models/User");
 const Sale = require("../models/Sale");
 const Token = require("../models/Token");
+const PDFDocument = require("pdfkit");
+
 const { httpResponse } = require("../middleware/responseHandler");
 const { isAdmin, addFiltersToWhereClause } = require("../utils/helper");
+const { generatePDF } = require("../utils/pdfManager");
 const {
   statusCode,
   message,
@@ -17,32 +20,35 @@ const { sendEmail } = require("../utils/mailManager");
 
 const getInvestors = async (req, res) => {
   try {
-    const { page = 1, pageSize = 10, investorId, isBlocked } = req.query;
-    console.log(
-      "🚀 ~ getInvestors ~ investorId:",
-      investorId,
-      "isBlocked:",
-      isBlocked
-    );
+    const {
+      page = 1,
+      pageSize = 10,
+      isBlocked,
+      sortBy,
+      sortOrder,
+      search,
+    } = req.query;
 
     const skip = (page - 1) * pageSize;
 
     let condition = { role: "INVESTOR", isEmailVerified: true };
 
-    if (investorId) {
-      condition._id = new mongoose.Types.ObjectId(`${investorId}`);
-    }
-
     if (isBlocked !== undefined) {
       condition.isBlocked = isBlocked === "true";
     }
 
-    console.log("condition ", condition);
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+      condition.$or = [
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+        { email: searchRegex },
+        { walletAddress: searchRegex },
+      ];
+    }
 
     const aggregatePipeline = [
-      {
-        $match: condition,
-      },
+      { $match: condition },
       {
         $lookup: {
           from: "transactions",
@@ -66,16 +72,141 @@ const getInvestors = async (req, res) => {
             $sum: {
               $map: {
                 input: "$transactions.tokenOut",
-                as: "usd",
-                in: { $toDouble: "$$usd" },
+                as: "token",
+                in: { $toDouble: "$$token" },
               },
             },
           },
         },
       },
-      // {
-      //   $sort: { created_at: -1 },
-      // },
+    ];
+
+    if (sortBy) {
+      const sortDirection = sortOrder === "desc" ? -1 : 1;
+      const sortStage = {};
+      sortStage[sortBy] = sortDirection;
+      aggregatePipeline.push({ $sort: sortStage });
+    }
+
+    aggregatePipeline.push({
+      $project: {
+        firstName: 1,
+        lastName: 1,
+        email: 1,
+        walletAddress: 1,
+        isBlocked: 1,
+        tokenIn: 1,
+        tokenOut: 1,
+        "transactions.paymentId": 1,
+        "transactions.tokenIn": 1,
+        "transactions.tokenOut": 1,
+        "transactions.paymentStatus": 1,
+        "transactions.transactionDate": 1,
+      },
+    });
+
+    aggregatePipeline.push({
+      $facet: {
+        metadata: [{ $count: "totalCount" }],
+        data: [{ $skip: skip }, { $limit: parseInt(pageSize) }],
+      },
+    });
+
+    aggregatePipeline.push({
+      $addFields: {
+        totalCount: { $arrayElemAt: ["$metadata.totalCount", 0] },
+      },
+    });
+
+    const investors = await User.aggregate(aggregatePipeline).exec();
+    const paginatedData = investors[0]?.data || [];
+    const totalCount = investors[0]?.totalCount || 0;
+
+    return httpResponse(
+      res,
+      statusCode.ok,
+      true,
+      message.allInvestorsReturned,
+      {
+        page: parseInt(page),
+        pageSize: parseInt(pageSize),
+        totalCount,
+        investors: paginatedData,
+      }
+    );
+  } catch (error) {
+    return httpResponse(res, statusCode.errorPage, false, error.message);
+  }
+};
+
+const getInvestorById = async (req, res) => {
+  try {
+    const {
+      investorId,
+      sortBy = "transactionDate",
+      sortOrder = "desc",
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    if (!investorId) {
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        "Investor ID is required."
+      );
+    }
+
+    const sortField = ["tokenIn", "tokenOut", "transactionDate"].includes(
+      sortBy
+    )
+      ? sortBy
+      : "transactionDate"; // default fallback
+
+    const sortDirection = sortOrder === "asc" ? 1 : -1;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const limitNum = parseInt(limit);
+
+    const investor = await User.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(investorId),
+          role: "INVESTOR",
+          isEmailVerified: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "transactions",
+          localField: "_id",
+          foreignField: "userId",
+          as: "transactions",
+        },
+      },
+      {
+        $addFields: {
+          tokenIn: {
+            $sum: {
+              $map: {
+                input: "$transactions",
+                as: "tran",
+                in: { $toDouble: "$$tran.tokenIn" },
+              },
+            },
+          },
+          tokenOut: {
+            $sum: {
+              $map: {
+                input: "$transactions",
+                as: "tran",
+                in: { $toDouble: "$$tran.tokenOut" },
+              },
+            },
+          },
+        },
+      },
       {
         $project: {
           firstName: 1,
@@ -85,56 +216,67 @@ const getInvestors = async (req, res) => {
           isBlocked: 1,
           tokenIn: 1,
           tokenOut: 1,
-          "transactions.paymentId": 1,
-          "transactions.tokenIn": 1,
-          "transactions.tokenOut": 1,
-          "transactions.paymentStatus": 1,
-          "transactions.transactionDate": 1,
+          transactions: 1,
         },
       },
-    ];
+    ]);
 
-    if (!investorId) {
-      aggregatePipeline.push({
-        $facet: {
-          metadata: [{ $count: "totalCount" }],
-          data: [{ $skip: skip }, { $limit: parseInt(pageSize) }],
-        },
-      });
-      aggregatePipeline.push({
-        $addFields: {
-          totalCount: { $arrayElemAt: ["$metadata.totalCount", 0] },
-        },
-      });
+    if (!investor.length) {
+      return httpResponse(
+        res,
+        statusCode.notFound,
+        false,
+        "Investor not found."
+      );
     }
 
-    const investors = await User.aggregate(aggregatePipeline).exec();
+    let investorData = investor[0];
 
-    let responseData;
-    if (investorId && investors.length) {
-      responseData = {
-        page: parseInt(page),
-        pageSize: parseInt(pageSize),
-        totalCount: 1,
-        investor: investors[0],
-      };
-    } else {
-      const paginatedData = investors[0]?.data || [];
-      const totalCount = investors[0]?.totalCount || 0;
-      responseData = {
-        page: parseInt(page),
-        pageSize: parseInt(pageSize),
-        totalCount,
-        investors: paginatedData,
-      };
-    }
+    let sortedTransactions = investorData.transactions || [];
+
+    sortedTransactions.sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
+
+      if (sortField === "tokenIn" || sortField === "tokenOut") {
+        aValue = parseFloat(aValue || 0);
+        bValue = parseFloat(bValue || 0);
+      }
+
+      if (sortField === "transactionDate") {
+        aValue = new Date(aValue);
+        bValue = new Date(bValue);
+      }
+
+      if (sortDirection === 1) {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    const totalTransactions = sortedTransactions.length;
+    const paginatedTransactions = sortedTransactions.slice(
+      skip,
+      skip + limitNum
+    );
+
+    investorData.transactions = paginatedTransactions;
 
     return httpResponse(
       res,
       statusCode.ok,
       true,
-      message.allInvestorsReturned,
-      responseData
+      "Investor returned successfully",
+      {
+        investor: investorData,
+        pagination: {
+          totalTransactions,
+          page: parseInt(page),
+          limit: limitNum,
+          totalPages: Math.ceil(totalTransactions / limitNum),
+        },
+      }
     );
   } catch (error) {
     return httpResponse(res, statusCode.errorPage, false, error.message);
@@ -143,7 +285,25 @@ const getInvestors = async (req, res) => {
 
 const getAllInvestments = async (req, res) => {
   try {
-    const { filter, page, saleId } = req.query;
+    const {
+      filter,
+      page = 1,
+      saleId,
+      search,
+      sortBy = "transactionDate",
+      sortOrder = "desc",
+      pageSize = 10,
+    } = req.query;
+
+    const sortField = ["transactionDate", "tokenIn", "tokenOut"].includes(
+      sortBy
+    )
+      ? sortBy
+      : "transactionDate";
+    const sortDirection = sortOrder === "asc" ? 1 : -1;
+
+    const skip = (parseInt(page) - 1) * parseInt(pageSize);
+
     const pipeline = [
       {
         $lookup: {
@@ -153,12 +313,7 @@ const getAllInvestments = async (req, res) => {
           as: "saleDetails",
         },
       },
-      {
-        $unwind: {
-          path: "$saleDetails",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
+      { $unwind: { path: "$saleDetails", preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
           from: "users",
@@ -167,32 +322,7 @@ const getAllInvestments = async (req, res) => {
           as: "userDetails",
         },
       },
-      {
-        $unwind: {
-          path: "$userDetails",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $sort: { created_at: -1 },
-      },
-      {
-        $project: {
-          paymentIntentId: 1,
-          tokenIn: 1,
-          tokenOut: 1,
-          paymentStatus: 1,
-          paymentType: 1,
-          transactionDate: 1,
-          saleId: 1,
-          "saleDetails.name": 1,
-          "saleDetails.startTime": 1,
-          "saleDetails.endTime": 1,
-          "userDetails.firstName": 1,
-          "userDetails.lastName": 1,
-          "userDetails.email": 1,
-        },
-      },
+      { $unwind: { path: "$userDetails", preserveNullAndEmptyArrays: true } },
     ];
 
     if (saleId) {
@@ -201,78 +331,194 @@ const getAllInvestments = async (req, res) => {
       });
     }
 
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+      pipeline.push({
+        $match: {
+          $or: [
+            { "userDetails.firstName": { $regex: searchRegex } },
+            { "userDetails.lastName": { $regex: searchRegex } },
+            { "userDetails.email": { $regex: searchRegex } },
+            { "saleDetails.name": { $regex: searchRegex } },
+          ],
+        },
+      });
+    }
+
     if (filter === "last10") {
-      pipeline.push({ $sort: { transactionDate: 1 } }, { $limit: 10 });
+      pipeline.push(
+        { $sort: { transactionDate: 1 } },
+        { $limit: 10 },
+        {
+          $project: {
+            _id: 0,
+            paymentIntentId: 1,
+            tokenIn: 1,
+            tokenOut: 1,
+            paymentStatus: 1,
+            paymentType: 1,
+            transactionDate: 1,
+            saleId: 1,
+            "saleDetails.name": 1,
+            "saleDetails.startDate": 1,
+            "saleDetails.endDate": 1,
+            "userDetails.firstName": 1,
+            "userDetails.lastName": 1,
+            "userDetails.email": 1,
+          },
+        }
+      );
     } else if (filter === "top10") {
-      pipeline.push({ $sort: { transactionDate: -1 } }, { $limit: 10 });
-    } else if (page && req.query.pageSize) {
-      const pageSize = parseInt(req.query.pageSize);
-      const skip = (page - 1) * pageSize;
-      pipeline.push({
-        $facet: {
-          metadata: [{ $count: "totalCount" }],
-          data: [{ $skip: skip }, { $limit: pageSize }],
-        },
-      });
-      pipeline.push({
-        $addFields: {
-          totalCount: { $arrayElemAt: ["$metadata.totalCount", 0] },
-        },
-      });
+      pipeline.push(
+        { $sort: { transactionDate: -1 } },
+        { $limit: 10 },
+        {
+          $project: {
+            _id: 0,
+            paymentIntentId: 1,
+            tokenIn: 1,
+            tokenOut: 1,
+            paymentStatus: 1,
+            paymentType: 1,
+            transactionDate: 1,
+            saleId: 1,
+            "saleDetails.name": 1,
+            "saleDetails.startDate": 1,
+            "saleDetails.endDate": 1,
+            "userDetails.firstName": 1,
+            "userDetails.lastName": 1,
+            "userDetails.email": 1,
+          },
+        }
+      );
+    } else {
+      if (["tokenIn", "tokenOut"].includes(sortField)) {
+        pipeline.push({
+          $addFields: {
+            numericTokenIn: { $toDouble: "$tokenIn" },
+            numericTokenOut: { $toDouble: "$tokenOut" },
+          },
+        });
+      }
 
-      const investments = await Transaction.aggregate(pipeline).exec();
-      const paginatedData = investments[0]?.data || [];
-      const totalCount = investments[0]?.totalCount || 0;
+      pipeline.push(
+        {
+          $sort: {
+            [sortField === "tokenIn"
+              ? "numericTokenIn"
+              : sortField === "tokenOut"
+              ? "numericTokenOut"
+              : sortField]: sortDirection,
+          },
+        },
+        {
+          $facet: {
+            metadata: [{ $count: "totalCount" }],
+            data: [
+              { $skip: skip },
+              { $limit: parseInt(pageSize) },
+              {
+                $project: {
+                  _id: 0,
+                  paymentIntentId: 1,
+                  tokenIn: 1,
+                  tokenOut: 1,
+                  paymentStatus: 1,
+                  paymentType: 1,
+                  transactionDate: 1,
+                  saleId: 1,
+                  "saleDetails.name": 1,
+                  "saleDetails.startDate": 1,
+                  "saleDetails.endDate": 1,
+                  "saleDetails.tokenPrice": 1,
+                  "userDetails.firstName": 1,
+                  "userDetails.lastName": 1,
+                  "userDetails.email": 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $addFields: {
+            totalCount: { $arrayElemAt: ["$metadata.totalCount", 0] },
+          },
+        }
+      );
+    }
 
-      const responseData = {
-        page,
-        pageSize,
-        totalCount,
-        investments: paginatedData,
-      };
+    const investments = await Transaction.aggregate(pipeline).exec();
+
+    if (filter === "last10" || filter === "top10") {
       return httpResponse(
         res,
         statusCode.ok,
         true,
         message.allInvestmentsReturned,
-        responseData
+        investments
       );
     }
 
-    const investments = await Transaction.aggregate(pipeline).exec();
+    const paginatedData = investments[0]?.data || [];
+    const totalCount = investments[0]?.totalCount || 0;
+
+    const responseData = {
+      page: parseInt(page),
+      pageSize: parseInt(pageSize),
+      totalCount,
+      totalPages: Math.ceil(totalCount / pageSize),
+      investments: paginatedData,
+    };
+
     return httpResponse(
       res,
       statusCode.ok,
       true,
       message.allInvestmentsReturned,
-      investments
+      responseData
     );
   } catch (error) {
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
+
 const getInvestmentDetails = async (req, res) => {
   try {
-    const { id } = req.params; // Extract transaction ID from request parameters
-    const transactionId = id; // Assign the transaction ID
-    console.log("🚀 ~ getInvestmentDetails ~ transactionId:", transactionId);
+    const { id } = req.params;
+    const {
+      search,
+      sortBy = "transactionDate",
+      sortOrder = "desc",
+    } = req.query;
 
-    if (!transactionId) {
-      return httpResponse(
-        res,
-        statusCode.badRequest,
-        false,
-        message.transactionIdRequired
-      );
+    const matchStage = [];
+
+    if (id) {
+      matchStage.push({
+        _id: new mongoose.Types.ObjectId(id),
+      });
     }
 
-    // Aggregation pipeline to fetch transaction details
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+      matchStage.push({
+        $or: [
+          { "userDetails.firstName": { $regex: searchRegex } },
+          { "userDetails.lastName": { $regex: searchRegex } },
+          { "userDetails.email": { $regex: searchRegex } },
+          { "saleDetails.name": { $regex: searchRegex } },
+        ],
+      });
+    }
+
+    const sortField = ["transactionDate", "tokenIn", "tokenOut"].includes(
+      sortBy
+    )
+      ? sortBy
+      : "transactionDate";
+    const sortDirection = sortOrder === "asc" ? 1 : -1;
+
     const transactionDetails = await Transaction.aggregate([
-      {
-        $match: {
-          _id: new mongoose.Types.ObjectId(`${transactionId}`), // Match the transaction ID
-        },
-      },
       {
         $lookup: {
           from: "users",
@@ -281,25 +527,18 @@ const getInvestmentDetails = async (req, res) => {
           as: "userDetails",
         },
       },
-      {
-        $unwind: {
-          path: "$userDetails",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
+      { $unwind: { path: "$userDetails", preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
-          from: "sales", // Join with the Sale collection
+          from: "sales",
           localField: "saleId",
           foreignField: "_id",
           as: "saleDetails",
         },
       },
+      { $unwind: { path: "$saleDetails", preserveNullAndEmptyArrays: true } },
       {
-        $unwind: {
-          path: "$saleDetails", // Unwind the saleDetails array
-          preserveNullAndEmptyArrays: true, // Keep documents even if saleDetails is null
-        },
+        $match: matchStage.length > 0 ? { $and: matchStage } : {},
       },
       {
         $project: {
@@ -313,10 +552,11 @@ const getInvestmentDetails = async (req, res) => {
           "userDetails.lastName": 1,
           "userDetails.email": 1,
           "saleDetails.name": 1,
-          "saleDetails.startTime": 1,
-          "saleDetails.endTime": 1,
+          "saleDetails.startDate": 1,
+          "saleDetails.endDate": 1,
         },
       },
+      { $sort: { [sortField]: sortDirection } },
     ]).exec();
 
     if (!transactionDetails.length) {
@@ -328,68 +568,15 @@ const getInvestmentDetails = async (req, res) => {
       );
     }
 
-    console.log(
-      "🚀 ~ getInvestmentDetails ~ transactionDetails:",
-      transactionDetails
-    );
-
-    // Return the transaction details
     return httpResponse(
       res,
       statusCode.ok,
       true,
       message.transactionDetailsFetched,
-      transactionDetails[0]
+      transactionDetails.length === 1
+        ? transactionDetails[0]
+        : transactionDetails
     );
-  } catch (error) {
-    return httpResponse(res, statusCode.errorPage, false, error.message);
-  }
-};
-
-const createSaleOld = async (req, res) => {
-  try {
-    const adminCheck = await isAdmin(req.data.role);
-    if (!adminCheck) {
-      return httpResponse(
-        res,
-        statusCode.badRequest,
-        false,
-        message.userIsNotAdmin
-      );
-    }
-    const {
-      saleId,
-      startTime,
-      endTime,
-      tokenPrice,
-      txnHash,
-      blockNumber,
-      blockHash,
-      txnIndex,
-    } = req.body;
-    const saleExists = await Sale.findOne({ saleId }).exec();
-    if (saleExists) {
-      return httpResponse(
-        res,
-        statusCode.badRequest,
-        false,
-        message.saleAlreadyExists,
-        null
-      );
-    }
-    await Sale.updateMany({ active: true }, { active: false }).exec();
-    const sale = await Sale.create({
-      saleId,
-      startTime,
-      endTime,
-      tokenPrice,
-      txnHash,
-      blockNumber,
-      blockHash,
-      txnIndex,
-      active: true,
-    });
-    return httpResponse(res, statusCode.ok, true, message.saleCreated, sale);
   } catch (error) {
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
@@ -397,7 +584,8 @@ const createSaleOld = async (req, res) => {
 
 const createSale = async (req, res) => {
   try {
-    const { name, startTime, endTime, tokenPrice } = req.body;
+    const { name, startDate, endDate, tokenPrice } = req.body;
+
     const adminCheck = await isAdmin(req.data.role);
     if (!adminCheck) {
       return httpResponse(
@@ -408,11 +596,7 @@ const createSale = async (req, res) => {
       );
     }
 
-    // const normalizedName = name.trim().toLowerCase();
-
-    // const existingSale = await Sale.findOne({ name: normalizedName }).exec();
     const existingSale = await Sale.findOne({ name }).exec();
-
     if (existingSale) {
       return httpResponse(
         res,
@@ -422,13 +606,42 @@ const createSale = async (req, res) => {
       );
     }
 
+    const activeSale = await Sale.findOne({
+      active: true,
+      $or: [{ startDate: { $lte: endDate }, endDate: { $gte: startDate } }],
+    }).exec();
+
+    if (activeSale) {
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.ActiveSaleAlreadyExists
+      );
+    }
+
+    const futureSale = await Sale.findOne({
+      active: false,
+      $or: [{ startDate: { $lte: endDate }, endDate: { $gte: startDate } }],
+    }).exec();
+
+    if (futureSale) {
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.FutureSaleOverlapError
+      );
+    }
+
     const sale = await Sale.create({
       name,
-      startTime,
-      endTime,
+      startDate,
+      endDate,
       tokenPrice,
       active: false,
     });
+
     return httpResponse(res, statusCode.ok, true, message.saleCreated, sale);
   } catch (error) {
     return httpResponse(res, statusCode.errorPage, false, error.message);
@@ -454,7 +667,7 @@ const getSales = async (req, res) => {
 
     filterStatus = filterStatus === "true";
 
-    const dateFilterColumn = "endTime";
+    const dateFilterColumn = "endDate";
     let whereClause = {};
 
     const searchByColumns = ["name"];
@@ -696,8 +909,8 @@ const getSaleStatistics = async (req, res) => {
         $project: {
           _id: 1,
           saleId: 1,
-          startTime: 1,
-          endTime: 1,
+          startDate: 1,
+          endDate: 1,
           active: 1,
           tokenPrice: 1,
           txnHash: 1,
@@ -851,7 +1064,7 @@ const updateUserStatus = async (req, res) => {
 
 const transactions = async (req, res) => {
   try {
-    const { page, investorAddress } = req.query;
+    const { page } = req.query;
     const pageSize = parseInt(req.query.pageSize);
     const skip = (page - 1) * pageSize;
     const query = {};
@@ -882,82 +1095,81 @@ const transactions = async (req, res) => {
 
 const getSalesAirDropTransactions = async (req, res) => {
   try {
-    const { page } = req.query;
-    const pageSize = parseInt(req.query.pageSize);
+    const { page = 1 } = req.query; // Default page is 1 if not provided
+    const pageSize = parseInt(req.query.pageSize) || 10; // Default pageSize is 10 if not provided
     const saleId = req.params.id;
 
     const skip = (page - 1) * pageSize;
-    let whereClause = {
-      saleId: new ObjectId(saleId),
+
+    // Define the where clause for filtering transactions
+    const whereClause = {
+      saleId: new mongoose.Types.ObjectId(`${saleId}`),
       paymentStatus: "Paid",
       paymentTokenOutStatus: false,
     };
 
+    // Fetch transactions with wallet addresses, sale details, and token info
     const transactionsData = await Transaction.aggregate([
-      { $match: whereClause },
+      { $match: whereClause }, // Match the conditions
       {
         $lookup: {
-          from: "users",
-          localField: "transactions.userId",
+          from: "users", // Join with the Users collection
+          localField: "userId",
           foreignField: "_id",
-          as: "transactions.userDetails",
+          as: "userDetails",
         },
       },
       {
         $unwind: {
-          path: "$transactions.userDetails",
-          preserveNullAndEmptyArrays: true,
+          path: "$userDetails", // Unwind the userDetails array
+          preserveNullAndEmptyArrays: true, // Keep documents even if userDetails is null
         },
       },
       {
         $lookup: {
-          from: "sales",
-          localField: "transactions.saleId",
+          from: "sales", // Join with the Sales collection
+          localField: "saleId",
           foreignField: "_id",
-          as: "transactions.saleDetails",
+          as: "saleDetails",
         },
       },
       {
         $unwind: {
-          path: "$transactions.saleDetails",
-          preserveNullAndEmptyArrays: true,
+          path: "$saleDetails", // Unwind the saleDetails array
+          preserveNullAndEmptyArrays: true, // Keep documents even if saleDetails is null
         },
       },
       {
         $project: {
-          "transactions._id": 1,
-          "transactions.paymentId": 1,
-          "transactions.tokenOut": 1,
-          "transactions.tokenIn": 1,
-          "transactions.paymentStatus": 1,
-          "transactions.saleId": 1,
-          "transactions.created_at": 1,
-          "transactions.saleDetails._id": 1,
-          "transactions.saleDetails.name": 1,
-          "transactions.saleDetails.startTime": 1,
-          "transactions.saleDetails.endTime": 1,
-          "transactions.saleDetails.tokenPrice": 1,
-          "transactions.userDetails._id": 1,
-          "transactions.userDetails.email": 1,
-          "transactions.userDetails.lastName": 1,
-          "transactions.userDetails.firstName": 1,
-          "transactions.userDetails.walletAddress": 1,
+          _id: 1,
+          saleId: 1,
+          paymentStatus: 1,
+          paymentTokenOutStatus: 1,
+          tokenIn: 1,
+          tokenOut: 1,
+          "userDetails.walletAddress": 1,
+          "userDetails.email": 1,
+          "userDetails.firstName": 1,
+          "userDetails.lastName": 1,
+          "saleDetails.name": 1,
+          "saleDetails.startDate": 1,
+          "saleDetails.endDate": 1,
+          "saleDetails.tokenPrice": 1,
         },
       },
-      { $skip: skip }, // 👈 Pagination: Skip X documents
-      { $limit: pageSize }, // 👈 Pagination: Limit to pageSize
+      { $skip: skip },
+      { $limit: pageSize },
     ]);
 
-    // 4. Optional total count for frontend
     const totalTransactions = await Transaction.countDocuments(
-      condition
+      whereClause
     ).exec();
 
     const responseData = {
-      page,
+      page: parseInt(page),
       pageSize,
       totalTransactions,
-      transactionsData,
+      transactions: transactionsData,
     };
 
     return httpResponse(
@@ -1005,21 +1217,82 @@ const updateSalesAirDropTransactions = async (req, res) => {
   }
 };
 
-const updateTransactionStatus = async (req, res) => {
+const downloadInvestments = async (req, res) => {
   try {
-    const adminCheck = await isAdmin(req.data.role);
+    const investmentPipeline = [
+      { $sort: { created_at: -1 } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      {
+        $lookup: {
+          from: "sales",
+          localField: "saleId",
+          foreignField: "_id",
+          as: "sale",
+        },
+      },
+      {
+        $unwind: { path: "$user", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $unwind: { path: "$sale", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $project: {
+          paymentIntentId: 1,
+          tokenIn: 1,
+          tokenOut: 1,
+          transactionDate: 1,
+          created_at: 1,
+          "user.email": 1,
+          "sale.name": 1,
+          "sale.tokenPrice": 1,
+        },
+      },
+    ];
 
-    if (!adminCheck) {
-      return httpResponse(
-        res,
-        statusCode.unAuthorized,
-        false,
-        message.userIsNotAdmin
-      );
-    }
-    
+    const transactions = await Transaction.aggregate(investmentPipeline);
+    console.log("🚀 ~ downloadInvestments ~ transactions:", transactions);
+
+    const headers = [
+      "Payment ID",
+      "User Email",
+      "Sale Name",
+      "Tokens",
+      "Amount Paid",
+      "Transaction Date",
+    ];
+
+    const rows = transactions.map((transaction) => ({
+      ["Payment ID"]: transaction.paymentIntentId || "-",
+      ["User Email"]: transaction.user?.email || "-",
+      ["Sale Name"]: transaction.sale?.name || "-",
+      ["Tokens"]: transaction.tokenIn || 0,
+      ["Amount Paid"]: transaction.tokenOut || 0,
+      ["Transaction Date"]: transaction.transactionDate
+        ? moment(transaction.transactionDate).format("DD/MM/YYYY, HH:mm:ss")
+        : "-",
+    }));
+
+    const pdfBuffer = await generatePDF({
+      headers,
+      rows,
+      title: "Investments Transactions",
+    });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="InvestmentsTransactions.pdf"'
+    );
+    res.send(Buffer.from(pdfBuffer));
   } catch (error) {
-    console.log("error here ===>", error);
     return httpResponse(res, statusCode.errorPage, false, error.message);
   }
 };
@@ -1028,12 +1301,14 @@ module.exports = {
   getInvestors,
   getAllInvestments,
   getInvestmentDetails,
+  getInvestorById,
   createSale,
   getSales,
   getSale,
   getOneInvestorAllInvestments,
   getSaleStatistics,
   dashboard,
+  downloadInvestments,
   updateUserStatus,
   transactions,
   getSalesAirDropTransactions,

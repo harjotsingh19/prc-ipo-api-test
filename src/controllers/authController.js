@@ -17,6 +17,7 @@ const {
 } = require("../config/constants");
 const config = require("../config/config");
 const { sendEmail } = require("../utils/mailManager");
+const { log } = require("console");
 
 const registerInvestor = async (req, res) => {
   try {
@@ -32,6 +33,8 @@ const registerInvestor = async (req, res) => {
         customerStripeId = existingUser.customerStripeId;
         await Otp.deleteMany({ userId: existingUser._id }).exec();
         await User.deleteOne({ email: userEmail }).exec();
+
+        console.log("existingUser in if of register investor ===>");
       } else {
         return httpResponse(
           res,
@@ -109,6 +112,8 @@ const registerInvestor = async (req, res) => {
 const verifyOTP = async (req, res) => {
   try {
     const { otp, userId, operation } = req.body;
+    console.log("🚀 ~ verifyOTP ~ payload otp:", otp, userId, operation);
+
     if (operation != otpOperations.emailVerification) {
       return httpResponse(
         res,
@@ -118,9 +123,20 @@ const verifyOTP = async (req, res) => {
       );
     }
 
+    console.log("🚀 ~ verifyOTP ~ payload otp:", otp);
+
+    console.log("🚀 ~ verifyOTP ~ payload otp:", typeof otp);
+
     const otpData = await Otp.findOne({ userId: userId, operation })
       .populate("userId")
       .exec();
+
+    console.log("🚀 ~ verifyOTP ~ otpData:", otpData);
+
+    console.log("🚀 ~ verifyOTP ~ otpData:", otpData.otp);
+
+    console.log("🚀 ~ verifyOTP ~ otpData:", typeof otpData.otp);
+
     if (!otpData) {
       return httpResponse(
         res,
@@ -150,7 +166,6 @@ const verifyOTP = async (req, res) => {
 
     await otpData.deleteOne({ userId, operation }).exec();
 
-    // const statusHistory = { timestamp: Date.now(), reason: "" };
     const updateUserData = {
       updated_at: Date.now(),
     };
@@ -158,8 +173,6 @@ const verifyOTP = async (req, res) => {
     switch (operation) {
       case otpOperations.emailVerification:
         updateUserData.isEmailVerified = true;
-        // updateUserData.status = status.EMAIL_VERIFIED;
-        // statusHistory.status = status.EMAIL_VERIFIED;
         break;
       case otpOperations.phoneVerification:
         updateUserData.isPhoneVerified = true;
@@ -171,7 +184,6 @@ const verifyOTP = async (req, res) => {
     const updatedUserData = await User.findOneAndUpdate(
       { _id: userId },
       {
-        // $push: { statusHistory: statusHistory },
         $set: updateUserData,
       },
       {
@@ -188,6 +200,8 @@ const verifyOTP = async (req, res) => {
       accessToken: accessToken,
     });
   } catch (error) {
+    console.log("🚀 ~ verifyOTP ~ error:", error.message);
+
     return httpResponse(res, statusCode.serverError, false, error.message);
   }
 };
@@ -451,11 +465,6 @@ const addWalletAddress = async (req, res) => {
         { user, accessToken, refreshToken }
       );
     }
-    // const statusHistory = {
-    //   status: status.NEW,
-    //   timestamp: Date.now(),
-    //   reason: "",
-    // };
 
     const investor = await User.create({
       walletAddress,
@@ -464,7 +473,6 @@ const addWalletAddress = async (req, res) => {
       isKycVerified: false,
       isActive: true,
       status: status.NEW,
-      // statusHistory: statusHistory,
     });
     const accessToken = await jwtSign(
       investor,

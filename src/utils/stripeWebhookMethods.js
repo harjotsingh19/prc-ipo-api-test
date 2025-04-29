@@ -86,7 +86,6 @@ const handleCheckoutSessionCompleted = async (event) => {
     }
 
     token.claimedTokens += Number(tokenIn);
-    // token.availableTokens -= Number(tokenIn);
     token.fundsRaised += Number(tokenOut);
     await token.save();
 
