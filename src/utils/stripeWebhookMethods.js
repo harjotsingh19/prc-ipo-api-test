@@ -3,7 +3,8 @@ const Transaction = require("../models/Transaction");
 const Token = require("../models/Token");
 const StripeSessionPayment = require("../models/stripePaymentSession");
 const { httpResponse } = require("../middleware/responseHandler");
-const { statusCode, message } = require("../config/constants");
+const { statusCode, message, emailTemplateId } = require("../config/constants");
+const { sendEmail } = require("../utils/mailManager");
 
 const handleCheckoutSessionCompleted = async (event) => {
   const session = event.data.object;
@@ -70,6 +71,14 @@ const handleCheckoutSessionCompleted = async (event) => {
       transactionDate: new Date(),
     });
     await transaction.save();
+
+    await sendEmail(user.email, emailTemplateId.purchaseConfirmation, {
+      user_name: userData.firstName,
+      amount: tokenOut,
+      transaction_id: transaction._id,
+      date: transaction.transactionDate,
+      token_purchased: transaction.tokenIn,
+    });
 
     console.log("Transaction saved:", transaction);
     let token = await Token.findOne().exec();

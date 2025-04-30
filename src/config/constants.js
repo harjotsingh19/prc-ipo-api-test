@@ -215,6 +215,7 @@ const emailTemplateId = {
   updateWallet: "d-78d6042282d84c858ebf0b8c97fd44ae",
   addWallet: "d-05eb49bd4d694d8f8c5e0288f3929d19",
   airdropUpdate: "d-1b7ff7febe42469095bc5433c58bc92b",
+  purchaseConfirmation: "d-88e08cb30b8c41d2bb1c06c2161e50f5",
 };
 
 const responseStatus = {
