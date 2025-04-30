@@ -1361,7 +1361,7 @@ const sendAirdropConfirmationMail = async (receiversData, transactionHash) => {
         user_name: receiver.user_name,
         wallet_address: receiver.wallet_address,
         amount: receiver.amount,
-        transaction_hash: receiver.transaction_hash,
+        transaction_hash: transactionHash,
       },
     }));
     const response = await sendEmailToMultipleUsers(
