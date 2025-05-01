@@ -3,6 +3,7 @@ const router = express.Router();
 const userController = require("../controllers/userController");
 const { auth } = require("../middleware/auth");
 const userValidator = require("../utils/validators/user");
+const { limiter } = require("../middleware/auth");
 
 router.patch(
   "/profile/:id",
@@ -30,6 +31,7 @@ router.put(
   "/wallet",
   auth,
   [userValidator.validateAddWallet, userValidator.result],
+  limiter,
   userController.addWallet
 );
 

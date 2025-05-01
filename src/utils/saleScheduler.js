@@ -15,6 +15,10 @@ cron.schedule("* * * * *", async () => {
     for (const sale of salesToStart) {
       await Sale.findByIdAndUpdate(sale._id, { active: true });
       console.log(`✅ Sale "${sale.name}" started automatically.`);
+      console.log(
+        "time when sale becomes active :",
+        new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+      );
     }
 
     const salesToEnd = await Sale.find({
@@ -25,6 +29,10 @@ cron.schedule("* * * * *", async () => {
     for (const sale of salesToEnd) {
       await Sale.findByIdAndUpdate(sale._id, { active: false });
       console.log(`🛑 Sale "${sale.name}" ended automatically.`);
+      console.log(
+        "time when sale becomes inactive :",
+        new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+      );
     }
   } catch (error) {
     console.error("❌ Error in Sale Scheduler:", error.message);

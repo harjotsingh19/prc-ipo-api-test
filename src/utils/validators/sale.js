@@ -27,9 +27,5 @@ exports.validatePurchaseToken = [
     .trim()
     .notEmpty()
     .bail()
-    .withMessage("Amount Paid is required.")
-    .matches(/^\d+(\.\d{1,5})?$/)
-    .withMessage(
-      "Amount Paid must be a valid number with up to 5 decimal places."
-    ),
+    .withMessage("Amount Paid is required."),
 ];

@@ -18,6 +18,8 @@ module.exports = {
   //stripe
   STRIPE_TOKEN: process.env.STRIPE_TOKEN,
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+
   ADMIN_WALLET_ADDRESS: process.env.ADMIN_WALLET_ADDRESS,
   PRC_CONTRACT_ADDRESS: process.env.PRC_CONTRACT_ADDRESS,
+  RPC_URL: process.env.RPC_URL,
 };

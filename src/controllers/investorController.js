@@ -3,9 +3,9 @@ const User = require("../models/User");
 const { httpResponse } = require("../middleware/responseHandler");
 const { statusCode, message } = require("../config/constants");
 const Transaction = require("../models/Transaction");
+const Sale = require("../models/Sale");
 const tokenVesting = require("../models/tokenVesting");
 const TokenClaimHistory = require("../models/TokenClaimHistory");
-const Sale = require("../models/Sale");
 
 const getInvestments = async (req, res) => {
   try {
@@ -49,10 +49,22 @@ const getInvestments = async (req, res) => {
         $group: {
           _id: "$_id",
           walletAddress: { $first: "$walletAddress" },
-          transactions: { $push: "$transactions" },
+          transactions: {
+            $push: {
+              $cond: [
+                { $ifNull: ["$transactions._id", false] },
+                "$transactions",
+                "$$REMOVE",
+              ],
+            },
+          },
           totalTokenBought: {
             $sum: {
-              $toDouble: "$transactions.tokenIn",
+              $cond: [
+                { $ifNull: ["$transactions.tokenIn", false] },
+                { $toDouble: "$transactions.tokenIn" },
+                0,
+              ],
             },
           },
         },
@@ -66,6 +78,8 @@ const getInvestments = async (req, res) => {
           "transactions.tokenOut": 1,
           "transactions.saleId": 1,
           "transactions.paymentStatus": 1,
+          "transactions.paymentIntentId": 1,
+          "transactions.paymentReferenceId": 1,
           "transactions.created_at": 1,
           "transactions.saleDetails._id": 1,
           "transactions.saleDetails.name": 1,
@@ -74,17 +88,10 @@ const getInvestments = async (req, res) => {
           "transactions.saleDetails.tokenPrice": 1,
         },
       },
-      // { $skip: skipCount }, // 👈 Pagination: Skip X documents
-      // { $limit: pageSize }, // 👈 Pagination: Limit to pageSize
     ]);
 
-    // 4. Optional total count for frontend
     const totalUser = await User.countDocuments(condition);
     console.log("🚀 ~ getInvestments ~ totalCount:", totalUser);
-
-    // Assuming 'Transaction' is the model for your transactions collection
-    // const totalTransactions = await Transaction.countDocuments(condition);
-    // console.log("🚀 ~ getTransactions ~ totalTransactions:", totalTransactions);
 
     return httpResponse(
       res,
@@ -92,13 +99,7 @@ const getInvestments = async (req, res) => {
       true,
       message.allInvestmentsReturned,
       {
-        data: investments,
-        // pagination: {
-        //   total: totalTransactions,
-        //   page,
-        //   pageSize,
-        //   totalPages: Math.ceil(totalTransactions / pageSize),
-        // },
+        investments,
       }
     );
   } catch (error) {

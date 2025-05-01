@@ -2,14 +2,17 @@ const cron = require("node-cron");
 const User = require("../models/User");
 const { sendEmailToMultipleUsers } = require("./mailManager");
 const { emailTemplateId } = require("../config/constants");
-/* 
- SCHEDULE JOBS TO SEND REMINDER TO USERS TO ADD WALLET ADDRESS
-*/
-cron.schedule("0 0 * * *", async () => {
+
+cron.schedule("0 0 * * 0", async () => {
+  // cron.schedule("* * * * *", async () => {
   try {
+    console.log("wallet link scheduler");
+
     const usersWithoutWallet = await User.find({
       walletAddress: { $in: [null, ""] },
+      role: "INVESTOR",
     });
+    console.log("🚀 ~ cron.schedule ~ usersWithoutWallet:", usersWithoutWallet);
 
     if (usersWithoutWallet.length) {
       const mailData = usersWithoutWallet.map((user) => ({

@@ -30,6 +30,10 @@ const txnSchema = new mongoose.Schema(
       required: true, //100 pRC
     },
 
+    paymentReferenceId: {
+      type: String,
+    },
+
     tokenOut: {
       type: String,
       required: true, //100 USD
@@ -44,14 +48,14 @@ const txnSchema = new mongoose.Schema(
       default: false,
     },
     paymentType: {
-      type: String, // e.g., 'credit card', 'debit card', 'bank transfer', etc.
+      type: String,
     },
     transactionDate: {
       type: Date,
       default: Date.now,
     },
     paymentHash: {
-      type: String, // e.g., 'credit card', 'debit card', 'bank transfer', etc.
+      type: String,
     },
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }

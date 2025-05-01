@@ -1,6 +1,7 @@
 const { check, validationResult } = require("express-validator");
 const { httpResponse } = require("../../middleware/responseHandler");
 const { statusCode } = require("../../config/constants");
+const { param } = require("express-validator");
 
 exports.result = (req, res, next) => {
   const errors = validationResult(req);
@@ -56,6 +57,10 @@ exports.validateSaleList = [
     .withMessage("Page size is required."),
 ];
 
+exports.validateAirdropList = [
+  check("id").trim().notEmpty().bail().withMessage("Sale ID is required."),
+];
+
 exports.validateWhitelistAddressList = [
   check("page").trim().notEmpty().bail().withMessage("Page is required."),
   check("pageSize")
@@ -63,6 +68,16 @@ exports.validateWhitelistAddressList = [
     .notEmpty()
     .bail()
     .withMessage("Page size is required."),
+];
+
+exports.validateTokenTransferStatusUpdate = [
+  param("id")
+    .trim()
+    .notEmpty()
+    .withMessage("Sale ID (id) is required in the URL.")
+    .bail()
+    .isString()
+    .withMessage("Sale ID must be a string."),
 ];
 
 exports.validateInvestorKYCList = [
@@ -117,6 +132,10 @@ exports.validateClaimTokenHistoryList = [
 
 exports.commonIdValidate = [
   check("id").trim().notEmpty().bail().withMessage("Id is required."),
+];
+
+exports.commonParamIdValidate = [
+  param("id").trim().notEmpty().bail().withMessage("Investor ID is required."),
 ];
 
 exports.validateUserStatus = [

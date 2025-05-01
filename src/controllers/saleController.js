@@ -9,10 +9,19 @@ const { createCustomer, createSession } = require("../utils/stripeMethods");
 
 const purchaseToken = async (req, res) => {
   try {
+    console.log("🚀 ~ purchaseToken ~ req.body:", req.data);
+    if (req.data.role != "INVESTOR") {
+      return httpResponse(
+        res,
+        statusCode.unAuthorized,
+        false,
+        message.userIsNotInVestor
+      );
+    }
+
     const userId = req.data.id;
-    console.log("🚀 ~ purchaseToken ~ userId:", userId);
-    const { saleId, quantity, amountPaid } = req.body;
-    console.log("🚀 ~ purchaseToken ~ req:", req.body);
+
+    let { saleId, quantity, amountPaid } = req.body;
 
     const userData = await User.findById({
       _id: new mongoose.Types.ObjectId(`${userId}`),
@@ -37,7 +46,6 @@ const purchaseToken = async (req, res) => {
     }
 
     const saleData = await Sale.findById(saleId).exec();
-    console.log("🚀 ~ purchaseToken ~ saleData:", saleData);
 
     if (saleData?.active !== true) {
       return httpResponse(
@@ -65,28 +73,26 @@ const purchaseToken = async (req, res) => {
       await userData.save();
     }
 
-    console.log(
-      "🚀 ~ purchaseToken ~ Number(amountPaid):",
-      Math.round(amountPaid)
-    );
+    amountPaid = Math.round(amountPaid);
+
+    console.log("🚀 ~ purchaseToken ~amount to Pay:", amountPaid);
 
     const checkoutSession = await createSession({
       customerId: customerStripeId,
-      amountPaid: Math.round(amountPaid), // in cents
+      amountPaid: amountPaid,
       currency: "usd",
       mode: "payment",
-      successUrl: `http://localhost:3000/docs/#/sale/purchaseToken`,
-      errorUrl: `http://localhost:3000/docs/#/sale/purchaseToken`,
+      successUrl: `${config.userFrontendUrl}payment-status/success?session_id={CHECKOUT_SESSION_ID}`,
+      errorUrl: `${config.userFrontendUrl}payment-status/failure?session_id={CHECKOUT_SESSION_ID}`,
       metaData: {
         userId: userId,
         tokenIn: Number(quantity),
         saleId: saleData._id.toString(),
-        tokenOut: Number(amountPaid / 100),
+        tokenOut: amountPaid / 100,
       },
       couponId: "",
       quantity: Number(quantity),
     });
-    console.log("🚀 ~ purchaseToken ~ checkoutSession:", checkoutSession);
 
     if (!checkoutSession.success) {
       return httpResponse(

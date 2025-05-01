@@ -1,9 +1,14 @@
+const { invalid } = require("moment");
+
 const message = {
   // Auth
   enterAccessToken: "Enter access token",
   invalidToken: "Invalid access token",
-  loginSuccessfully: "Login Successfully",
+  loginSuccessfully: "Logged In Successfully",
   userIsNotAdmin: "User is not a Admin",
+  incorrectLoginDetails:
+    "The details you entered are incorrect.Please check and try again.",
+  userIsNotInVestor: "User is not an Investor",
 
   // OTP
   accountVerification: "Account Verification",
@@ -22,6 +27,9 @@ const message = {
   phoneAlreadyVerified: "Phone already verified",
   emailNotSent: "Email not sent",
   invalidOperation: "Invalid operation",
+  otpEmailExpired: "OTP email is expired. Please request a new OTP email.",
+  otpWalletExpired:
+    "OTP for wallet update is expired. Please request a new OTP email.",
 
   // Investor / Admin
   walletAddressAlreadyExists: "Wallet Address already exists",
@@ -30,11 +38,14 @@ const message = {
   userAlreadyExists: "User already exists",
   userEmailAlreadyExists: "A user with this email address already exists.",
   singleInvestorReturned: "Investor returned",
+  investorIdRequired: "Investor ID is required",
 
   userNotCreatedOnStripe: "Error creating user on stripe",
   userWalletUpdated: "User wallet updated successfully",
   userDoesnotExists: "User doesn't exists",
   userIsBlocked: "This user is blocked and is not allowed to purchase tokens.",
+  errorAddingWallet: "Error adding wallet address",
+
   noChangeDetected:
     "No changes detected. The user's block status is already set to the requested value.",
 
@@ -62,6 +73,7 @@ const message = {
   transactionIdRequired: "Transaction ID is required",
   transactionDetailsFetched: "Transaction details fetched successfully",
   tokenRefreshedSuccessfully: "Token refreshed successfully",
+  investorNotFound: "Investor not found",
 
   vestingDataNotFound: "Vesting data not found",
   fetchBlacklistAddressSuccess: "Blacklist address fetched successfully",
@@ -75,15 +87,31 @@ const message = {
   saleAlreadyExists: "This sale already exists",
   saleCreated: "Sale created successfully",
   saleNotFound: "Sale not found",
+  saleNotFoundOrActive: "Sale not found or not active",
   saleEnded: "Sale ended successfully",
   SaleDataReturned: "Sale data returned",
   SaleNameAlreadyExists: "Sale name already exists",
   allTransactionReturned: "Funds Transfer Successfully",
-  allTransactionUpdated: "Transaction Updated Successfully",
   saleNotActive: "Sale does not exist or is not active.",
   ActiveSaleAlreadyExists: "Another active sale is already running.",
+  startDateInPast: "Start date must be in the future.",
+  endDateInPast: "End date must be after the start date.",
+  saleStillActive: "Sale is not yet completed or still active.",
   FutureSaleOverlapError:
     "Another sale is scheduled to start within the time frame of the new sale. Please choose different start and end times to avoid overlapping with an existing future sale.",
+
+  //airdrop
+  noTransactionUpdated: "Token airdrop unsuccessfull",
+  noTokenToAirDropped: "No tokens to airdrop",
+  TransactionUpdated: "Transaction updated successfully",
+  updateTokenTransferStatusSuccess: "Token airdrop completed successfully",
+  tokenStatusUpdated: "Token status updated successfully",
+  tokenTransfered: "Token transfered successfully",
+  tokenStatusUpdationFailed:
+    "Token status updation failed or no token status updation required.",
+  invalidTokenStatusPayload: "Invalid payload or missing saleId",
+  amountReceiverLengthMismatch: "Amount receiver length mismatch",
+  noUserForAirdrop: "No eligible users found to airdrop tokens",
 
   //stripe
   missingMetadata: "Required metadata is missing in the session.",
@@ -137,7 +165,6 @@ const message = {
 
   //validation
   validationError: "Validation failed",
-
   ErrorWhileTransferFunds: "Error While Transfer funds",
 };
 
@@ -151,6 +178,7 @@ const statusCode = {
   noContent: 204,
   forbidden: 403,
   errorPage: 404,
+  tooManyRequest: 429,
   serverError: 500,
 };
 
@@ -206,9 +234,6 @@ const kycReUploadNotificationMsg = (name) => {
 };
 
 const emailTemplateId = {
-  investorKycUnderReview: "d-afe0dbf1566444b9a49b0dbd996727cd",
-  investorKycReject: "d-6bb61bb3209346a6b4ce8b4e049a794a",
-  adminNewKycRequest: "d-a8c843a428564e8b8ba66de5e8a8ab4e",
   adminResetPassword: "d-2321dc47bc884cb69584f5a06f653c5a",
   emailVerification: "d-0ef5c6c8109d4118af682e7dc85b7cd1",
   resetPassword: "d-fcbaa17104744f608f2b1ca57af0d198",
@@ -230,11 +255,8 @@ module.exports = {
   responseStatus,
   roles,
   otpOperations,
-  // phoneOtpVerificationMsg,
   tokenScheduleMonth,
   notificationCategory,
   userStatusOnBlockchain,
-  // kycRequestNotificationMsg,
-  // kycReUploadNotificationMsg,
   emailTemplateId,
 };

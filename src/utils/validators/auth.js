@@ -116,13 +116,7 @@ class Validator {
         .trim()
         .notEmpty()
         .bail()
-        .withMessage("userId is required.")
-        .custom(async (value) => {
-          const user = await User.findOne({ _id: value }).exec();
-          if (!user) {
-            throw new Error(message.userDoesnotExists);
-          }
-        }),
+        .withMessage("userId is required."),
       check("otp").trim().notEmpty().bail().withMessage("OTP is required."),
       check("operation")
         .notEmpty()

@@ -24,13 +24,6 @@ const createSession = async (options) => {
       "Type:",
       typeof amountPaid
     );
-    console.log("currency:", currency, "Type:", typeof currency);
-    console.log("mode:", mode, "Type:", typeof mode);
-    console.log("successUrl:", successUrl, "Type:", typeof successUrl);
-    console.log("errorUrl:", errorUrl, "Type:", typeof errorUrl);
-    console.log("metaData:", metaData, "Type:", typeof metaData);
-    console.log("couponId:", couponId, "Type:", typeof couponId);
-    console.log("quantity:", quantity, "Type:", typeof quantity);
 
     const sessionPayload = {
       mode,

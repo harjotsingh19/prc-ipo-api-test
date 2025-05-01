@@ -8,6 +8,7 @@ exports.setUpSendGrid = () => {
 
 /* For Sending Email With Custom Template */
 exports.sendEmail = async (recipient, templateId, template_data) => {
+  console.log("🚀 ~ exports.sendEmail= ~ template_data:", template_data);
   const emailBody = {
     to: recipient,
     from: config.sendGridEmailAddress,
@@ -18,6 +19,8 @@ exports.sendEmail = async (recipient, templateId, template_data) => {
     const response = await sendGridMail.send(emailBody);
     return response;
   } catch (e) {
+    console.log("🚀 ~ exports.sendEmail= ~ error:", e.response.body);
+
     return e;
   }
 };

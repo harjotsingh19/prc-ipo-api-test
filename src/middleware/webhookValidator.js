@@ -23,7 +23,7 @@ const verifyWebhookSecret = (req, res, next) => {
     console.error("⚠️  Webhook signature verification failed:", err);
     return res.status(statusCode.badRequest).json({
       success: false,
-      message: message.webhookSignatureVerificationFailed, // Missing comma added here
+      message: message.webhookSignatureVerificationFailed,
       error: err.message,
     });
   }

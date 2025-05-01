@@ -20,10 +20,6 @@ const swaggerDefinition = {
       version: "1.0.0",
       title: "PRC-ICO",
       description: "PRC-ICO",
-      // contact: {
-      //   name: "Developer",
-      //   email: "manpreet@debutinfotech.com",
-      // },
     },
     servers: [
       {
@@ -32,17 +28,6 @@ const swaggerDefinition = {
       },
     ],
     paths: {
-      // "/health": {
-      //   get: {
-      //     tags: ["Health"],
-      //     summary: "Get Application Health status",
-      //     description: "Checks the health of the application",
-      //     operationId: "getHealth",
-      //     parameters: [],
-      //     responses: apiResponse,
-      //   },
-      // },
-      // "/auth/addWalletAddress": authComp.addWalletAddress,
       "/auth/login": authComp.login,
       "/auth/forgotPassword": authComp.forgotPassword,
       "/auth/resetPassword/{token}": authComp.resetPassword,
@@ -59,7 +44,7 @@ const swaggerDefinition = {
       "/user/change-password": changePassword,
       "/user/wallet": addWallet,
       "/admin/investors": adminComp.getInvestors,
-      "/admin/investors/{id}": adminComp.getInvestorById,
+      "/admin/investor/{id}": adminComp.getInvestorById,
       "/admin/investments": adminComp.getAllInvestments,
       "/admin/investments/{id}": adminComp.getInvestmentsById,
       "/admin/download-investments": adminComp.downloadInvestments,
@@ -73,7 +58,8 @@ const swaggerDefinition = {
       "/investor/contribution": investorComp.getContributions,
       "/admin/transactions": adminComp.getTransactions,
       "/admin/sales/airdrop/{id}": adminComp.getAirdrop,
-      "/admin/sales/airdrop": adminComp.updateSaleTransactions,
+      "/admin/airdrop": adminComp.getTokenAirdrop,
+      "/admin/airdrop/{id}": adminComp.updateAirdropTransactionStatus,
     },
     schemes: ["http", "https"],
     securityDefinitions: {

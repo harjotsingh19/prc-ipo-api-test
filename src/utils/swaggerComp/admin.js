@@ -13,6 +13,18 @@ const commonGetConfig = (summary, description, operationId, parameters) => ({
   },
 });
 
+const commonGetPutConfig = (summary, description, operationId, parameters) => ({
+  put: {
+    tags: ["Admin"],
+    security: [{ bearerAuth: [] }],
+    summary,
+    description,
+    operationId,
+    parameters,
+    responses: apiResponse,
+  },
+});
+
 const downloadInvestments = commonGetConfig(
   "Download Investments PDF",
   "Download all investment transactions as a PDF file",
@@ -91,10 +103,132 @@ const getSales = {
   },
 };
 
-const getAirdrop = commonGetConfig(
-  "Get Sale Air drop listing",
-  "Get Sale Air drop listing",
+const getAirdrop = commonGetPutConfig(
+  "Get Sale Airdrop Transactions and Process Fund Transfer",
+  "Fetch paginated user data for a completed sale and optionally process token transfers based on `transactedData` in the request body. Only works for sales that are no longer active.",
   "getAllSaleAirdrop",
+  [
+    {
+      in: "path",
+      name: "id",
+      required: true,
+      description: "Sale ID",
+      schema: {
+        type: "string",
+      },
+    },
+    {
+      in: "query",
+      name: "page",
+
+      description: "Page number for pagination",
+      schema: {
+        type: "string",
+      },
+    },
+    {
+      in: "query",
+      name: "pageSize",
+
+      description: "Page size for pagination",
+      schema: {
+        type: "string",
+      },
+    },
+    {
+      in: "body",
+      name: "transactedData",
+      required: false,
+      description:
+        "Optional array of transaction objects to directly trigger airdrop",
+      schema: {
+        type: "object",
+        properties: {
+          transactedData: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                userId: { type: "string" },
+                walletAddress: { type: "string" },
+                totalTokens: { type: "number" },
+              },
+            },
+          },
+        },
+      },
+    },
+  ]
+);
+
+const getTokenAirdrop = commonGetConfig(
+  "Get Sale Airdrop listing",
+  "Get Sale Airdrop listing",
+  "getAllSaleAirdrop",
+  [
+    {
+      in: "query",
+      name: "id",
+      required: true,
+      description: "Sale ID",
+      schema: { type: "string" },
+    },
+    {
+      in: "query",
+      name: "page",
+      required: false,
+      description: "Page number",
+      schema: { type: "integer", example: 1 },
+    },
+    {
+      in: "query",
+      name: "pageSize",
+      required: false,
+      description: "Items per page",
+      schema: { type: "integer", example: 10 },
+    },
+    {
+      in: "query",
+      name: "search[email]",
+      required: false,
+      description: "Search by email",
+      schema: { type: "string", example: "john@example.com" },
+    },
+    {
+      in: "query",
+      name: "search[firstName]",
+      required: false,
+      description: "Search by first name",
+      schema: { type: "string" },
+    },
+    {
+      in: "query",
+      name: "sort[totalTokens]",
+      required: false,
+      description: "Sort by totalTokens. Use 'asc' or 'desc'.",
+      schema: { type: "string", example: "desc" },
+    },
+    {
+      in: "query",
+      name: "range[createdAt][start]",
+      required: false,
+      description: "Start date for createdAt filter",
+      schema: { type: "string", format: "date-time" },
+    },
+    {
+      in: "query",
+      name: "range[createdAt][end]",
+      required: false,
+      description: "End date for createdAt filter",
+      schema: { type: "string", format: "date-time" },
+    },
+  ]
+);
+
+const updateAirdropTransactionStatus = commonGetPutConfig(
+  "Update token transfer status",
+  "Marks paymentTokenOutStatus as true and stores the paymentHash for each user in a sale.",
+  "updateTokenTransferStatus",
   [
     {
       in: "path",
@@ -106,21 +240,60 @@ const getAirdrop = commonGetConfig(
       },
     },
     {
-      in: "query",
-      name: "page",
+      in: "body",
+      name: "body",
       required: true,
-      description: "Enter page number",
+      description:
+        "Transaction details and user list for token transfer update",
       schema: {
-        type: "string",
-      },
-    },
-    {
-      in: "query",
-      name: "pageSize",
-      required: true,
-      description: "Enter page size",
-      schema: {
-        type: "string",
+        type: "object",
+        required: ["transactedData", "transactionHash"],
+        properties: {
+          transactedData: {
+            type: "array",
+            items: {
+              type: "object",
+              required: [
+                "_id",
+                "email",
+                "firstName",
+                "lastName",
+                "walletAddress",
+                "totalTokens",
+              ],
+              properties: {
+                _id: {
+                  type: "string",
+                  example: "680a5c2463688901ab91fca8",
+                },
+                email: {
+                  type: "string",
+                  example: "prcuser@yopmail.com",
+                },
+                firstName: {
+                  type: "string",
+                  example: "Vaibhav",
+                },
+                lastName: {
+                  type: "string",
+                  example: "Stoinis",
+                },
+                walletAddress: {
+                  type: "string",
+                  example: "0x238092A986b187e5A9C220DDd5034197E023e480",
+                },
+                totalTokens: {
+                  type: "number",
+                  example: 41.7,
+                },
+              },
+            },
+          },
+          transactionHash: {
+            type: "string",
+            example: "tytyttt7898",
+          },
+        },
       },
     },
   ]
@@ -128,14 +301,14 @@ const getAirdrop = commonGetConfig(
 
 const getInvestorById = commonGetConfig(
   "Get Investor details by ID",
-  "Get Investor details by ID, including transactions",
+  "Get Investor details by ID",
   "getInvestorById",
   [
     {
-      in: "query",
-      name: "investorId",
+      in: "path",
+      name: "id",
       required: true,
-      description: "Enter investor ID",
+      description: "Investor ID (MongoDB ObjectId)",
       schema: {
         type: "string",
       },
@@ -144,16 +317,17 @@ const getInvestorById = commonGetConfig(
       in: "query",
       name: "sortBy",
       description:
-        "Field to sort transactions by (e.g., transactionDate, tokenIn, tokenOut)",
+        "Field to sort transactions by (transactionDate, tokenIn, tokenOut)",
       schema: {
         type: "string",
+        enum: ["transactionDate", "tokenIn", "tokenOut"],
         default: "transactionDate",
       },
     },
     {
       in: "query",
       name: "sortOrder",
-      description: "Sort order for transactions (asc or desc)",
+      description: "Sort order for transactions",
       schema: {
         type: "string",
         enum: ["asc", "desc"],
@@ -163,10 +337,11 @@ const getInvestorById = commonGetConfig(
     {
       in: "query",
       name: "page",
-      description: "Page number for transactions",
+      description: "Page number for paginated transactions",
       schema: {
         type: "integer",
         default: 1,
+        minimum: 1,
       },
     },
     {
@@ -176,6 +351,7 @@ const getInvestorById = commonGetConfig(
       schema: {
         type: "integer",
         default: 10,
+        minimum: 1,
       },
     },
   ]
@@ -712,6 +888,8 @@ module.exports = {
   purchaseToken,
   getTransactions,
   getAirdrop,
+  getTokenAirdrop,
+  updateAirdropTransactionStatus,
   updateSaleTransactions,
   updateUserStatus,
   getInvestorById,

@@ -17,7 +17,6 @@ const {
 } = require("../config/constants");
 const config = require("../config/config");
 const { sendEmail } = require("../utils/mailManager");
-const { log } = require("console");
 
 const registerInvestor = async (req, res) => {
   try {
@@ -69,31 +68,16 @@ const registerInvestor = async (req, res) => {
       password: hashedPassword,
       role,
       isActive: true,
-      // status: status.NEW,
       customerStripeId,
     });
 
-    let emailSent;
     if (user) {
       const otp = await generateOTP(user._id, otpOperations.emailVerification);
-      emailSent = await sendEmail(
-        user.email,
-        emailTemplateId.emailVerification,
-        {
-          user_name: user.firstName,
-          otp,
-        }
-      );
-    }
-
-    if (emailSent[0]?.statusCode != 202) {
-      return httpResponse(
-        res,
-        statusCode.serverError,
-        false,
-        message.emailNotSent,
-        null
-      );
+      console.log("🚀 ~ registerInvestor ~ otp:", otp);
+      await sendEmail(user.email, emailTemplateId.emailVerification, {
+        user_name: user.firstName,
+        otp,
+      });
     }
 
     return httpResponse(
@@ -113,21 +97,56 @@ const verifyOTP = async (req, res) => {
   try {
     const { otp, userId, operation } = req.body;
 
-    const otpData = await Otp.findOne({ userId: userId, operation })
+    const otpData = await Otp.findOne({ userId, operation })
       .populate("userId")
       .exec();
 
+    console.log("otp is ", otp);
+
+    console.log("type of operation", typeof operation);
+
     if (!otpData) {
-      return httpResponse(
-        res,
-        statusCode.badRequest,
-        false,
-        message.otpExpired
+      console.log(
+        "No OTP data found for user:",
+        userId,
+        "and operation:",
+        operation
       );
+
+      let errorMsg;
+      switch (operation) {
+        case otpOperations.emailVerification:
+          console.log("user with operaton 1 not exist for email verification.");
+          errorMsg = message.otpEmailExpired;
+          break;
+        case otpOperations.updateWallet:
+          console.log(
+            "user with operaton 3 not exist for wallet verification."
+          );
+          errorMsg = message.otpWalletExpired;
+          break;
+        default:
+          console.log(
+            "wrong operation value sent , it should be 1 for email and 3 for wallet."
+          );
+          errorMsg = message.invalidOperation;
+      }
+      return httpResponse(res, statusCode.badRequest, false, errorMsg);
     }
 
+    console.log(
+      "type of otpOperations.emailVerification",
+      typeof otpOperations.emailVerification
+    );
+
+    console.log(
+      "type of otpOperations.emailVerification",
+      typeof otpOperations.updateWallet
+    );
+
+    console.log("operation from payload ", operation);
     if (
-      operation == otpOperations.emailVerification &&
+      operation === otpOperations.emailVerification &&
       otpData.userId.isEmailVerified
     ) {
       return httpResponse(
@@ -138,6 +157,8 @@ const verifyOTP = async (req, res) => {
       );
     }
 
+    console.log("otp from db ", otpData.otp);
+
     if (otpData.otp !== otp) {
       return httpResponse(
         res,
@@ -146,8 +167,6 @@ const verifyOTP = async (req, res) => {
         message.invalidOtp
       );
     }
-
-    await otpData.deleteOne({ userId, operation }).exec();
 
     const updateUserData = {
       updated_at: Date.now(),
@@ -171,18 +190,16 @@ const verifyOTP = async (req, res) => {
         break;
     }
 
+    // Update user
     const updatedUserData = await User.findOneAndUpdate(
       { _id: userId },
-      {
-        $set: updateUserData,
-      },
-      {
-        new: true,
-      }
+      { $set: updateUserData },
+      { new: true }
     ).exec();
 
+    await otpData.deleteOne();
     const data = {};
-    if (operation == otpOperations.emailVerification) {
+    if (operation === otpOperations.emailVerification) {
       const accessToken = await jwtSign(
         updatedUserData,
         config.accessTokenSecret,
@@ -191,10 +208,10 @@ const verifyOTP = async (req, res) => {
       data.accessToken = accessToken;
       responseMessage = message.otpVerified;
     }
+
     return httpResponse(res, statusCode.ok, true, responseMessage, data);
   } catch (error) {
     console.log("🚀 ~ verifyOTP ~ error:", error.message);
-
     return httpResponse(res, statusCode.serverError, false, error.message);
   }
 };
@@ -210,7 +227,7 @@ const login = async (req, res) => {
         res,
         statusCode.badRequest,
         false,
-        message.userDoesnotExists
+        message.incorrectLoginDetails
       );
     }
 
@@ -221,16 +238,7 @@ const login = async (req, res) => {
         res,
         statusCode.badRequest,
         false,
-        message.invalidPassword
-      );
-    }
-
-    if (!userData.isActive) {
-      return httpResponse(
-        res,
-        statusCode.badRequest,
-        false,
-        message.userNotActive
+        message.incorrectLoginDetails
       );
     }
 
@@ -283,6 +291,19 @@ const resendOtp = async (req, res) => {
   try {
     const { userId, operation } = req.body;
 
+    if (
+      ![otpOperations.emailVerification, otpOperations.updateWallet].includes(
+        operation
+      )
+    ) {
+      return httpResponse(
+        res,
+        statusCode.badRequest,
+        false,
+        message.invalidOperation
+      );
+    }
+
     const userData = await User.findById(userId).exec();
 
     if (!userData) {
@@ -310,35 +331,16 @@ const resendOtp = async (req, res) => {
 
     const otp = await generateOTP(userData._id, operation);
 
-    let emailSent;
     if (operation == otpOperations.emailVerification) {
-      emailSent = await sendEmail(
-        userData.email,
-        emailTemplateId.emailVerification,
-        {
-          user_name: userData.firstName,
-          otp,
-        }
-      );
+      await sendEmail(userData.email, emailTemplateId.emailVerification, {
+        user_name: userData.firstName,
+        otp,
+      });
     } else if (operation == otpOperations.updateWallet) {
-      emailSent = await sendEmail(
-        userData.email,
-        emailTemplateId.updateWallet,
-        {
-          user_name: userData.firstName,
-          otp,
-        }
-      );
-    }
-
-    if (emailSent[0]?.statusCode != 202) {
-      return httpResponse(
-        res,
-        statusCode.serverError,
-        false,
-        message.emailNotSent,
-        null
-      );
+      await sendEmail(userData.email, emailTemplateId.updateWallet, {
+        user_name: userData.firstName,
+        otp,
+      });
     }
 
     return httpResponse(res, statusCode.ok, true, message.otpResentSuccess);
@@ -346,7 +348,6 @@ const resendOtp = async (req, res) => {
     return httpResponse(res, statusCode.badRequest, false, error.message);
   }
 };
-
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -370,15 +371,18 @@ const forgotPassword = async (req, res) => {
 
     let frontendUrl;
     if (user.role === "ADMIN") {
-      frontendUrl = `${config.adminFrontendUrl}/auth/reset-password/?token=${resetToken}`;
+      frontendUrl = `${config.adminFrontendUrl}auth/reset-password?token=${resetToken}`;
     } else if (user.role === "INVESTOR") {
-      frontendUrl = `${config.userFrontendUrl}/auth/reset-password/?resetToken=${resetToken}`;
+      frontendUrl = `${config.userFrontendUrl}auth/reset-password?resetToken=${resetToken}`;
     }
 
     const resetLink = `${frontendUrl}`;
 
+    console.log("🚀 ~ forgotPassword ~ resetLink:", resetLink);
+
     await sendEmail(user.email, emailTemplateId.resetPassword, {
       resetLink,
+      user_name: user.firstName,
     });
     return httpResponse(res, statusCode.ok, true, message.resetLinkSent);
   } catch (error) {

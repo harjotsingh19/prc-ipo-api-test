@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const path = require("path");
 const routes = require("./routes");
 const config = require("./config/config");
@@ -8,15 +9,30 @@ const morgan = require("morgan");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
 const { swaggerDefinition } = require("./utils/swagger.js");
+const { httpResponse } = require("./middleware/responseHandler");
+const createAdmin = require("./seeders/createAdmin.js");
+const {
+  statusCode,
+  message,
+  status: userStatus,
+} = require("./config/constants");
+
 require("./db/mongoose");
-require("./utils/saleScheduler.js"); // Start Cron Job
+
+mongoose.connection.once("connectedReady", async () => {
+  await createAdmin();
+});
+require("./utils/saleScheduler.js");
+
 require("./utils/addWalletScheduler.js");
+
 const swaggerSpec = swaggerJsDoc(swaggerDefinition);
 const rateLimit = require("express-rate-limit");
 
 const { setUpSendGrid } = require("../src/utils/mailManager");
 
 const app = express();
+
 app.disable("x-powered-by");
 
 const limiter = rateLimit({

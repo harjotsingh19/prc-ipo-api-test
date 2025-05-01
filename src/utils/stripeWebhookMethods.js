@@ -5,6 +5,7 @@ const StripeSessionPayment = require("../models/stripePaymentSession");
 const { httpResponse } = require("../middleware/responseHandler");
 const { statusCode, message, emailTemplateId } = require("../config/constants");
 const { sendEmail } = require("../utils/mailManager");
+const crypto = require("crypto");
 
 const handleCheckoutSessionCompleted = async (event) => {
   const session = event.data.object;
@@ -59,7 +60,12 @@ const handleCheckoutSessionCompleted = async (event) => {
     user.tokenBalance += Number(tokenIn);
     await user.save();
 
-    console.log("User token balance updated:", user.tokenBalance);
+    const now = new Date();
+    const formattedDate = now.toISOString().split("T")[0];
+    const timestamp = Date.now().toString(36);
+    const randomPart = crypto.randomBytes(4).toString("hex");
+
+    const paymentReferenceId = `prc-${formattedDate}-${timestamp}-${randomPart}`;
 
     const transaction = new Transaction({
       userId,
@@ -69,18 +75,12 @@ const handleCheckoutSessionCompleted = async (event) => {
       tokenOut,
       paymentStatus: "Paid",
       transactionDate: new Date(),
+      paymentReferenceId,
     });
     await transaction.save();
 
-    await sendEmail(user.email, emailTemplateId.purchaseConfirmation, {
-      user_name: userData.firstName,
-      amount: tokenOut,
-      transaction_id: transaction._id,
-      date: transaction.transactionDate,
-      token_purchased: transaction.tokenIn,
-    });
-
     console.log("Transaction saved:", transaction);
+
     let token = await Token.findOne().exec();
     if (!token) {
       console.log("Token document not found. Creating a new one...");
@@ -98,12 +98,16 @@ const handleCheckoutSessionCompleted = async (event) => {
     token.fundsRaised += Number(tokenOut);
     await token.save();
 
-    console.log("Token document updated:", token);
+    await sendEmail(user.email, emailTemplateId.purchaseConfirmation, {
+      user_name: user.firstName,
+      amount: tokenOut,
+      transaction_id: transaction._id,
+      date: transaction.transactionDate,
+      token_purchased: transaction.tokenIn,
+    });
 
-    console.log("Token document updated:", token);
-
-    const stripeSessionPayment = await StripeSessionPayment.findOneAndUpdate(
-      { sessionId }, // Find the session by its sessionId
+    await StripeSessionPayment.findOneAndUpdate(
+      { sessionId },
       {
         sessionId,
         paymentIntentId,
@@ -125,10 +129,8 @@ const handleCheckoutSessionCompleted = async (event) => {
           : null,
         status: session.status,
       },
-      { new: true, upsert: true } // Return the updated document, do not create a new one
+      { new: true, upsert: true }
     );
-
-    console.log("Stripe session payment saved:", stripeSessionPayment);
 
     console.log(`Tokens credited to user ${userId}: ${tokenIn}`);
 

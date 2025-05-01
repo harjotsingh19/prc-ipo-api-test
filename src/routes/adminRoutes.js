@@ -6,8 +6,8 @@ const adminValidator = require("../utils/validators/admin");
 
 router.get(
   "/investors",
-  auth,
-  isAdmin,
+  // auth,
+  // isAdmin,
   [
     adminValidator.handleInvestorQuery,
     adminValidator.validateInvestorsList,
@@ -17,10 +17,10 @@ router.get(
 );
 
 router.get(
-  "/investors/:id",
+  "/investor/:id",
   auth,
   isAdmin,
-  adminValidator.commonIdValidate,
+  adminValidator.commonParamIdValidate,
   adminValidator.result,
   adminController.getInvestorById
 );
@@ -36,33 +36,37 @@ router.post(
   [adminValidator.validateCreateSale, adminValidator.result],
   adminController.createSale
 );
-router.get(
-  "/sales/airdrop/:id",
-  auth,
-  isAdmin,
-  [
-    [...adminValidator.validateSaleList, ...adminValidator.commonIdValidate],
-    adminValidator.result,
-  ],
-  adminController.getSalesAirDropTransactions
-);
-
-router.put(
-  "/sales/airdrop",
-  auth,
-  isAdmin,
-  [
-    adminValidator.validateUpdateSalesAirDropTransactions,
-    adminValidator.result,
-  ],
-  adminController.updateSalesAirDropTransactions
-);
 
 router.get(
   "/sales",
   auth,
   [adminValidator.validateSaleList, adminValidator.result],
   adminController.getSales
+);
+
+router.put(
+  "/sales/airdrop/:id",
+  // auth,
+  // isAdmin,
+
+  [adminValidator.commonIdValidate, adminValidator.result],
+  adminController.getSalesAirDropTransactions
+);
+
+router.get(
+  "/airdrop",
+  // auth,
+  // isAdmin,
+  [adminValidator.validateAirdropList, adminValidator.result],
+  adminController.getSalesAirDropUsers
+);
+
+router.put(
+  "/airdrop/:id",
+  // auth,
+  // isAdmin,
+  [adminValidator.validateTokenTransferStatusUpdate, adminValidator.result],
+  adminController.updateTokenTransferStatus
 );
 
 router.get(
